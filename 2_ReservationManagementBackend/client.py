@@ -421,7 +421,7 @@ class client:
                 print(json_object_reservation["message"] + " (at the facility of APIGROUP5 in Chicago, IL)\n")
                 parameters = {"user_id": self.user_id, "session": self.session}
                 response = requests.get(f'{self.base_url}/v1/user/', params=parameters)
-                json_list = json.loads(response.json())
+                json_list = response.json()
                 client_name = json_list[0][1]
                 # standardizing item request to match other facilities' formats
                 if thing_to_reserve == "extrud1":
@@ -991,8 +991,8 @@ class client:
 
 
 if __name__ == "__main__":
-    client().program()
-    # client(url='http://linux5.cs.uchicago.edu:51225').program()
+    # client().program()
+    client(url='http://linux5.cs.uchicago.edu:51225').program()
     # deployed url:
     # http://linux5.cs.uchicago.edu
     
