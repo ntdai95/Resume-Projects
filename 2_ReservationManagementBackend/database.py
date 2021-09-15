@@ -261,6 +261,25 @@ class Database:
             user = cursor.execute(sql, values).fetchall()
         return user
 
+    def get_user_without_session(self, email: str) -> List[Json]:
+        """Get a user
+
+        Retrieve a user row.
+
+        Args:
+            email: the email of the user to retrieve
+        Returns:
+            a user row
+        """
+        cursor = self.conn.cursor()
+        with self.conn:
+            sql = """
+                SELECT * from users
+                WHERE email = ?"""
+            values = (email,)
+            user = cursor.execute(sql, values).fetchall()
+        return user
+
     def get_clients(self) -> List[Json]:
         """Get all clients
 

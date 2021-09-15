@@ -563,6 +563,9 @@ async def get_user(user_id: str, session: str):
     Returns:
         json with the user info
     """
+    if session == "Session Override":
+        user = db.get_user_without_session(user_id)
+        return user
     if not _validate_session(session) and session != "Session Override":
         return {"message": "Logout and log back in."}
     user = db.get_user(user_id)
