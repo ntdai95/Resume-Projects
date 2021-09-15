@@ -991,8 +991,10 @@ class client:
 
 
 if __name__ == "__main__":
+    # deployed locally:
     # client().program()
-    client(url='http://linux5.cs.uchicago.edu:51225').program()
+
     # deployed url:
     # http://linux5.cs.uchicago.edu
+    client(url='http://linux5.cs.uchicago.edu:51225').program()
     
