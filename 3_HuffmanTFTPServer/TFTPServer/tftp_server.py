@@ -59,12 +59,9 @@ class TFTPServer:
                 t = Thread(target = self.receiving_write_request(), args = [client_address, client_data])
                 t.start()
                 list_of_threads.append(t)
-            # Joining those threads in the list which are still alive and discarding the others
-            for index, thread in enumerate(list_of_threads):
-                if thread.is_alive():
-                    thread.join()
-                else:
-                    del list_of_threads[index]
+            # Joining threads in the list
+            for thread in list_of_threads:
+                thread.join()
             # Closing down the socket after accepted from the client
             self.server_socket.close()
 
