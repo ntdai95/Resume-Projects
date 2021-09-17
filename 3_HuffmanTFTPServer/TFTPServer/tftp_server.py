@@ -138,7 +138,7 @@ class TFTPServer:
                 elif opcode == self.error_opcode:
                     error_code = client_data[3]
                     error_msg = self.error_messages[error_code]
-                    print(f"Error code {error_code}: {error_msg}")
+                    print("Error code {}: {}".format(error_code, error_msg))
                     ephemeral_socket.close()
                     return
             # if there is a timeout, and did not get any response, then we just sent the last data packet to the client again
@@ -160,7 +160,7 @@ class TFTPServer:
         ephemeral_socket.sendto(ack_packet, client_address)
         # Opening up the file based on the filename that we received from the client
         client_filename = client_data[2:]
-        f = open(f"{client_filename}", "wb")
+        f = open("{}".format(client_filename), "wb")
         # Retrieving the opcode from the client sent data and set data block number 
         # to be 1 because we are expecting to get the first data packet from the client
         opcode = client_data[1]
@@ -208,7 +208,7 @@ class TFTPServer:
                 elif opcode == self.error_opcode:
                     error_code = client_data[3]
                     error_msg = self.error_messages[error_code]
-                    print(f"Error code {error_code}: {error_msg}")
+                    print("Error code {}: {}".format(error_code, error_msg))
                     ephemeral_socket.close()
                     return
             # if there is a timeout, and did not get any response, then we just sent the last ack packet to the client again
