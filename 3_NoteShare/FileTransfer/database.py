@@ -6,8 +6,8 @@ class Database:
     Handles all database actions.
     """
     def __init__(self, name):
-        self.conn = sqlite3.connect(f"{name}.db")
-        self.create_tables(self.conn)
+        self.__conn = sqlite3.connect(f"{name}.db")
+        self.__create_tables(self.__conn)
 
 
     ########################
@@ -15,7 +15,7 @@ class Database:
     ########################
 
 
-    def create_tables(self, connection):
+    def __create_tables(self, connection):
         """Create tables
         Creates all tables using the provided connection.
         Args:
@@ -55,8 +55,8 @@ class Database:
             Error/Success message: error message if the username and password combination does not 
             match with the one registered in the database, otherwise returns nothing.
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   SELECT username, password
                   FROM users
@@ -83,8 +83,8 @@ class Database:
             Success result: boolean whether username and password has been successfully registered
             Error/Success message: error message if username or email already exists, otherwise returns confirmation message.
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   SELECT *
                   FROM users
@@ -125,8 +125,8 @@ class Database:
             Error/Success message: error message if the email address does not exist, otherwise returns confirmation message.
             Username: if there is an existing user with the requested email address in the database
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   SELECT *
                   FROM users
@@ -158,8 +158,8 @@ class Database:
             Success result: True, since username must exist at this point because the user has already logged in
             Success message: Confirmation message. It is able to update the new password because user definitely exists.
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   UPDATE users
                   SET password = ?
@@ -182,8 +182,8 @@ class Database:
             Success result: True, even if there is no note in the database
             Note list: a list of all notes rows with readable created datetime values
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   SELECT *
                   FROM notes
@@ -206,8 +206,8 @@ class Database:
             Success result: boolean whether the filename is already exist in the database
             Error/Success message: error message if the filename address exists, otherwise returns confirmation message.
         """
-        cursor = self.conn.cursor()
-        with self.conn:
+        cursor = self.__conn.cursor()
+        with self.__conn:
             sql = """
                   SELECT *
                   FROM notes
