@@ -2,6 +2,8 @@ import os
 import threading
 import smtplib
 import hashlib
+import pytz
+from datetime import datetime
 from dotenv import load_dotenv
 from socket import *
 from database import Database
@@ -24,19 +26,19 @@ class ClientThread(threading.Thread):
     
 
     def send_email(self, email=None, username=None, password=None):
-            with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                if email and password:
-                    subject = 'Request to change your password!'
-                    body = "Please, use the following new credentials to login to NoteShare:\n\nUsername: {}\nPassword: {}".format(username, password)
-                else:
-                    subject = 'NoteShare registration successful!'
-                    body = "Welcome to NoteShare!\n\nThank you for registering! Feel free to start getting or sharing your notes with others."
-                message = "Subject: {}\n\n{}".format(subject, body)
-                smtp.sendmail(EMAIL_ADDRESS, email, message)
+        with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            if email and username and password:
+                subject = 'Request to change your password!'
+                body = "Please, use the following new credentials to login to NoteShare:\n\nUsername: {}\nPassword: {}".format(username, password)
+            else:
+                subject = 'NoteShare registration successful!'
+                body = "Welcome to NoteShare!\n\nThank you for registering! Feel free to start getting or sharing your notes with others."
+            message = "Subject: {}\n\n{}".format(subject, body)
+            smtp.sendmail(EMAIL_ADDRESS, email, message)
 
 
     def run(self):
@@ -67,9 +69,10 @@ class ClientThread(threading.Thread):
             elif client_message["action"] == "get all files":
                 success_result, message_result = self.__db.get_all_notes()
             elif client_message["action"] == "upload":
-                success_result, message_result = self.__db.add_note(username=client_message["username"],
-                                                                    filename=client_message["filename"],
-                                                                    tag=client_message["tag"])
+                success_result, message_result = self.__db.add_note(filename=client_message["filename"],
+                                                                    username=client_message["username"],
+                                                                    tag=client_message["tag"],
+                                                                    created=datetime.now(pytz.timezone("America/Chicago")))
             elif client_message["action"] == "download":
                 success_result, message_result = self.__db.get_note(filename=client_message["filename"])
                 ClientMessage.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,

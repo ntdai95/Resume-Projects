@@ -180,19 +180,22 @@ class Database:
         Retreive all of the notes in the system.
         Returns:
             Success result: True, even if there is no note in the database
-            Note list: a list of all notes rows
+            Note list: a list of all notes rows with readable created datetime values
         """
         cursor = self.conn.cursor()
         with self.conn:
             sql = """
                   SELECT *
                   FROM notes
+                  ORDER BY filename ASC
                   """
             notes = cursor.execute(sql).fetchall()
+            for row in notes:
+                row[3] = row[3].strftime("%Y-%m-%d %H:%M")
             return True, notes
 
 
-    def add_note(self, username, filename, tag):
+    def add_note(self, filename, username, tag, created):
         """Add a new note
         Adds a new note to the system.
         Args:
@@ -216,10 +219,10 @@ class Database:
                 return False, "Please, select a unique filename for your note!"
 
             sql = """
-                  INSERT INTO notes (username, filename, tag)
-                  VALUES (?, ?, ?)
+                  INSERT INTO notes (filename, username, tag, created)
+                  VALUES (?, ?, ?, ?)
                   """
-            values = (username, filename, tag)
+            values = (filename, username, tag, created)
             cursor.execute(sql, values)
             return True, "Your note has been uploaded!"
 

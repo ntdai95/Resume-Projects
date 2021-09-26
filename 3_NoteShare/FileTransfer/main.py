@@ -283,6 +283,7 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
             else:
                 # Implement binary search
+                print(NOTES)
                 pass
 
         B1 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
@@ -293,6 +294,7 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
             else:
                 # Implement mergesort by tag if selected
+                print(NOTES)
                 pass
         
         B3 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20), command=show_files)
@@ -312,7 +314,7 @@ class DownloadPage(tk.Frame):
         def download_filename():
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
-            elif T2.get() in [row[0] for row in NOTES]:
+            elif T2.get() in [row[1] for row in NOTES]:
                 download_message = Client().send_action_message(ClientMessage(action="download", filename=T2.get()).to_json(),
                                                                               filename=T2.get())
                 messagebox.showinfo("Success", download_message["message"])
