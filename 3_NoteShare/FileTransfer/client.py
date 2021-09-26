@@ -1,11 +1,13 @@
 from socket import *
 import os
 from dotenv import load_dotenv
+from models import ClientMessage, ServerMessage
 
 
 load_dotenv()
 SERVER_IP = os.environ.get("SERVER_IP")
 SERVER_PORT = int(os.environ.get("SERVER_PORT"))
+
 
 class Client:
     def __init__(self):
@@ -14,21 +16,19 @@ class Client:
         self.__network_buffer_size = 4096
 
 
-    def send_action_message(self, data):
-        self.__client_socket.sendall(data)
-        server_data_json = self.__client_socket.recv(self.__network_buffer_size)
-        self.__client_socket.close()
-        return server_data_json
+    def send_action_message(self, data, filename=None):
+        try:
+            self.__client_socket.sendall(data)
+            if filename:
+                ClientMessage.sending_file(filename=filename, client_socket=self.__client_socket,
+                                           network_buffer_size=self.__network_buffer_size)
+                ServerMessage.receiving_file(filename=filename, client_socket=self.__client_socket,
+                                             network_buffer_size=self.__network_buffer_size)
 
-
-    def send_file(self, filename):
-        self.__client_socket.send(filename.encode(encoding="utf-8"))
-        with open(f"{filename}.code", "rb") as compressed_file:
-            while True:
-                bytes_data = compressed_file.read(self.__network_buffer_size)
-                if not bytes_data:
-                    break
-                self.__client_socket.sendall(bytes_data)
-                
-        self.__client_socket.close()
+            server_data_json = self.__client_socket.recv(self.__network_buffer_size)
+            return ServerMessage.process_message(server_data_json)
+        except:
+            return {"success":False, "message":"Server is temporarily unavailable. Try again later!"}
+        finally:
+            self.__client_socket.close()
             
