@@ -225,22 +225,3 @@ class Database:
             values = (filename, username, tag, created)
             cursor.execute(sql, values)
             return True, "Your note has been uploaded!"
-
-    
-    def get_note(self, filename):
-        """Get a specific note
-        Retreive the specific note in the system.
-        Returns:
-            Success result: True, because whether the filename exists in the database has been checked in the main.py
-            Success message: Confirmation message. The requested note file has been downloaded to the client
-        """
-        cursor = self.conn.cursor()
-        with self.conn:
-            sql = """
-                  SELECT *
-                  FROM notes
-                  WHERE filename = ?
-                  """
-            values = (filename,)
-            result = cursor.execute(sql, values).fetchone()
-            return True, "Your note has been donwloaded!"
