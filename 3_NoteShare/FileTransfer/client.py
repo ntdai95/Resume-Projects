@@ -16,12 +16,13 @@ class Client:
         self.__network_buffer_size = 4096
 
 
-    def send_action_message(self, data, filename=None):
+    def send_action_message(self, data, filename=None, action=None):
         try:
             self.__client_socket.sendall(data)
-            if filename:
+            if filename and action == "upload":
                 ClientMessage.sending_file(filename=filename, client_socket=self.__client_socket,
                                            network_buffer_size=self.__network_buffer_size)
+            elif filename and action == "download":
                 ServerMessage.receiving_file(filename=filename, client_socket=self.__client_socket,
                                              network_buffer_size=self.__network_buffer_size)
 

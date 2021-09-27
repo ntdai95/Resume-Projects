@@ -245,7 +245,8 @@ class UploadPage(tk.Frame):
         def upload_filename():
             if os.path.exists(f"{T1.get()}.code"):
                 upload_message = Client().send_action_message(ClientMessage(action="upload", username=USER,
-                                                                            filename=T1.get(), tag=T2.get()).to_json())
+                                                                            filename=T1.get(), tag=T2.get()).to_json(),
+                                                                            filename=T2.get(), action="upload")
                 if upload_message["success"]:
                     Client().send_file(filename=T1.get())
                     messagebox.showinfo("Success", upload_message["message"])
@@ -322,7 +323,7 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
             elif T2.get() in [row[1] for row in NOTES]:
                 download_message = Client().send_action_message(ClientMessage(action="download", filename=T2.get()).to_json(),
-                                                                              filename=T2.get())
+                                                                              filename=T2.get(), action="download")
                 messagebox.showinfo("Success", download_message["message"])
             else:
                 messagebox.showinfo("Error", "The requested filename does not exist. Please, enter" 

@@ -73,11 +73,11 @@ class ClientThread(threading.Thread):
                                                                 username=client_message["username"],
                                                                 tag=client_message["tag"],
                                                                 created=datetime.now(pytz.timezone("America/Chicago")))
-        elif client_message["action"] == "download":
             ClientMessage.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                            network_buffer_size=self.__network_buffer_size)
+                                         network_buffer_size=self.__network_buffer_size)
+        elif client_message["action"] == "download":
             ServerMessage.sending_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                        network_buffer_size=self.__network_buffer_size)
+                                       network_buffer_size=self.__network_buffer_size)
             success_result, message_result = True, "Your note has been donwloaded!"
 
         self.__client_socket.sendall(ServerMessage(success=success_result, message=message_result).to_json())
