@@ -7,7 +7,7 @@ from datetime import datetime
 from socket import *
 from dotenv import load_dotenv
 from database import Database
-from models import ClientMessage, ServerMessage
+from models import Message
 
 
 load_dotenv()
@@ -44,7 +44,7 @@ class ClientThread(threading.Thread):
 
     def __run(self):
         client_message_raw = self.__client_socket.recv(self.__network_buffer_size)
-        client_message = ClientMessage.process_message(client_message_raw)
+        client_message = Message.process_message(client_message_raw)
 
         if client_message["password"]:
             hashed_password = hashlib.sha256(client_message["password"].encode()).hexdigest()
@@ -73,14 +73,14 @@ class ClientThread(threading.Thread):
                                                                 username=client_message["username"],
                                                                 tag=client_message["tag"],
                                                                 created=datetime.now(pytz.timezone("America/Chicago")))
-            ClientMessage.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                         network_buffer_size=self.__network_buffer_size)
+            Message.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,
+                                   network_buffer_size=self.__network_buffer_size)
         elif client_message["action"] == "download":
-            ServerMessage.sending_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                       network_buffer_size=self.__network_buffer_size)
+            Message.sending_file(filename=client_message["filename"], client_socket=self.__client_socket,
+                                 network_buffer_size=self.__network_buffer_size)
             success_result, message_result = True, "Your note has been donwloaded!"
 
-        self.__client_socket.sendall(ServerMessage(success=success_result, message=message_result).to_json())
+        self.__client_socket.sendall(Message(success=success_result, message=message_result).to_json())
         self.__client_socket.close()
             
 
