@@ -5,8 +5,8 @@ from models import ClientMessage, ServerMessage
 
 
 load_dotenv()
-SERVER_IP = os.environ.get("SERVER_IP")
-SERVER_PORT = int(os.environ.get("SERVER_PORT"))
+SERVER_IP = "192.168.0.21" #os.environ.get("SERVER_IP")
+SERVER_PORT = 5000 #int(os.environ.get("SERVER_PORT"))
 
 
 class Client:

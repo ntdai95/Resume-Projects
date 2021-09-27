@@ -90,6 +90,7 @@ class Server:
     __server_socket.listen(5)
 
 
+    @classmethod
     def run(cls):
         while True:
             client_socket, client_address = cls.__server_socket.accept()

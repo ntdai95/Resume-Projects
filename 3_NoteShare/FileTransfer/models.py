@@ -13,7 +13,7 @@ class AbstractBaseClassModel(ABC):
 
 
     def sending_file(cls, filename, client_socket, network_buffer_size):
-        with open(f"{filename}.code", "rb") as compressed_file:
+        with open("{}.code".format(filename), "rb") as compressed_file:
             while True:
                 bytes_data = compressed_file.read(network_buffer_size)
                 if not bytes_data:
@@ -22,7 +22,7 @@ class AbstractBaseClassModel(ABC):
 
 
     def receiving_file(cls, filename, client_socket, network_buffer_size):
-        with open(f"{filename}.code", "wb") as compressed_file:
+        with open("{}.code".format(filename), "wb") as compressed_file:
             while True:
                 bytes_data = client_socket.recv(network_buffer_size)
                 if not bytes_data:

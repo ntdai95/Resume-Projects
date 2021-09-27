@@ -243,7 +243,7 @@ class UploadPage(tk.Frame):
         T2.place(x=40, y=420, width=860, height=60)
 
         def upload_filename():
-            if os.path.exists(f"{T1.get()}.code"):
+            if os.path.exists("{}.code".format(T1.get())):
                 upload_message = Client().send_action_message(ClientMessage(action="upload", username=USER,
                                                                             filename=T1.get(), tag=T2.get()).to_json(),
                                                                             filename=T2.get(), action="upload")
