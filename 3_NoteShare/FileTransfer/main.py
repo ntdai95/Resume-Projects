@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter.constants import END
 from PIL import Image, ImageTk
-from verify_email import verify_email
 from client import Client
 from models import Message
 
@@ -44,8 +43,8 @@ class LoginPage(tk.Frame):
             T2.delete(0, END)
 
         def signing_in():
-            login_message = Client.send_action_message(Message(action="login", username=T1.get(),
-                                                                       password=T2.get()).to_json())
+            login_message = Client().send_action_message(Message(action="login", username=T1.get(),
+                                                               password=T2.get()).to_json())
             if login_message["success"]:
                 global USER
                 USER = T1.get()
@@ -87,11 +86,9 @@ class LoginPage(tk.Frame):
             t5.place(x = 400, y=320, width=300, height=50)
             
             def create_account():
-                if not verify_email(t3.get()):
-                    messagebox.showinfo("Error", "Please, enter valid email addresses!")
-                elif t4.get() == t5.get():
-                    register_message = Client.send_action_message(Message(action="register", username=t2.get(), 
-                                                                          password=t4.get(), email=t3.get()).to_json())
+                if t4.get() == t5.get():
+                    register_message = Client().send_action_message(Message(action="register", username=t2.get(), 
+                                                                            password=t4.get(), email=t3.get()).to_json())
                     if register_message["success"]:
                         messagebox.showinfo("Success", register_message["message"])
                         window.destroy()
@@ -111,20 +108,17 @@ class LoginPage(tk.Frame):
         B2.place(x=240, y=370)
 
         def change_password_email():
-            if verify_email(T3.get()):
-                new_password = "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for _ in range(12)])
-                password_email_message = Client.send_action_message(Message(action="password email", email=T3.get(), 
+            new_password = "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for _ in range(12)])
+            password_email_message = Client().send_action_message(Message(action="password email", email=T3.get(), 
                                                                                     password=new_password).to_json())
-                if password_email_message["success"]:
-                    messagebox.showinfo("Success", password_email_message["message"])
-                else:
-                    messagebox.showinfo("Error", password_email_message["message"])
+            if password_email_message["success"]:
+                messagebox.showinfo("Success", password_email_message["message"])
             else:
-                messagebox.showinfo("Error", "Please, enter a valid email address!")
+                messagebox.showinfo("Error", password_email_message["message"])
 
         L3 = tk.Label(self, text="Type your email below, if you forgot your login credentials:",
-                      font=("Arial Bold", 17), bg='ivory')
-        L3.place(x=180, y=460)
+                      font=("Arial Bold", 16), bg='ivory')
+        L3.place(x=180, y=470)
         T3 = tk.Entry(self, font=("Arial Bold", 20))
         T3.place(x=200, y=520, width=440, height=50)
         B3 = tk.Button(self, text="Send!", bg="light green", font=("Arial", 20),
@@ -184,8 +178,8 @@ class UploadDownloadPage(tk.Frame):
 
             def change_password_username():
                 if t2.get() == t3.get():
-                    password_username_message = Client.send_action_message(Message(action="password username", username=USER, 
-                                                                                           password=t2.get()).to_json())
+                    password_username_message = Client().send_action_message(Message(action="password username", username=USER, 
+                                                                                   password=t2.get()).to_json())
                     if password_username_message["success"]:
                         messagebox.showinfo("Success", password_username_message["message"])
                     else:
@@ -206,7 +200,7 @@ class UploadDownloadPage(tk.Frame):
         B1.place(x=360, y=680)
 
         def get_all_filenames():
-            get_all_files_message = Client.send_action_message(Message(action="get all files").to_json())
+            get_all_files_message = Client().send_action_message(Message(action="get all files").to_json())
             if get_all_files_message["success"]:
                 global NOTES
                 NOTES = get_all_files_message["message"]
@@ -239,16 +233,16 @@ class UploadPage(tk.Frame):
         L2 = tk.Label(self, text="Type a tag that you want to associate with your file:",
                       font=("Arial Bold", 25), bg='ivory')
         L2.place(x=40, y=360)
-        T2 = tk.Entry(self, width = 30, show='*', font=("Arial Bold", 30))
+        T2 = tk.Entry(self, width = 30, font=("Arial Bold", 30))
         T2.place(x=40, y=420, width=860, height=60)
 
         def upload_filename():
             if os.path.exists("{}.code".format(T1.get())):
-                upload_message = Client.send_action_message(Message(action="upload", username=USER,
-                                                                            filename=T1.get(), tag=T2.get()).to_json(),
-                                                                            filename=T2.get(), action="upload")
+                upload_message = Client().send_action_message(Message(action="upload", username=USER,
+                                                                      filename=T1.get(), tag=T2.get()).to_json(),
+                                                                      filename=T1.get(), action="upload")
                 if upload_message["success"]:
-                    Client.send_file(filename=T1.get())
+                    Client().send_file(filename=T1.get())
                     messagebox.showinfo("Success", upload_message["message"])
                 else:
                     messagebox.showinfo("Error", upload_message["message"])
@@ -313,17 +307,17 @@ class DownloadPage(tk.Frame):
                             offvalue = 0, onvalue = 1, font=("Arial", 20), height=50, width=50)
         B2.place(x=540, y=350, width= 110, height=70)
         
-        L2 = tk.Label(self, text="Filename to download:", font=("Arial Bold", 20), bg='ivory')
+        L2 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
         L2.place(x=40, y=540)
         T2 = tk.Entry(self, width=30, show='*', font=("Arial Bold", 20))
-        T2.place(x=320, y=540, width=460, height=40)
+        T2.place(x=290, y=540, width=490, height=40)
 
         def download_filename():
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
             elif T2.get() in [row[1] for row in NOTES]:
-                download_message = Client.send_action_message(Message(action="download", filename=T2.get()).to_json(),
-                                                                              filename=T2.get(), action="download")
+                download_message = Client().send_action_message(Message(action="download", filename=T2.get()).to_json(),
+                                                                        filename=T2.get(), action="download")
                 messagebox.showinfo("Success", download_message["message"])
             else:
                 messagebox.showinfo("Error", "The requested filename does not exist. Please, enter" 

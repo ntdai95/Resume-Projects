@@ -26,7 +26,7 @@ class ClientThread(threading.Thread):
         self.__run()
     
 
-    def __send_email(self, email=None, username=None, password=None):
+    def __send_email(self, email, username=None, password=None):
         with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
             smtp.ehlo()
             smtp.starttls()
@@ -35,7 +35,7 @@ class ClientThread(threading.Thread):
             if email and username and password:
                 subject = 'Request to change your password!'
                 body = "Please, use the following new credentials to login to NoteShare:\n\nUsername: {}\nPassword: {}".format(username, password)
-            else:
+            elif email:
                 subject = 'NoteShare registration successful!'
                 body = "Welcome to NoteShare!\n\nThank you for registering! Feel free to start getting or sharing your notes with others."
             message = "Subject: {}\n\n{}".format(subject, body)
@@ -51,18 +51,18 @@ class ClientThread(threading.Thread):
 
         if client_message["action"] == "login":
             success_result, message_result = self.__db.login(username=client_message["username"], 
-                                                                password=hashed_password)
+                                                             password=hashed_password)
         elif client_message["action"] == "register":
             success_result, message_result = self.__db.register(username=client_message["username"],
                                                                 password=hashed_password,
                                                                 email=client_message["email"])
             if success_result:
-                self.__send_email()
+                self.__send_email(email=client_message["email"])
         elif client_message["action"] == "password email":
             success_result, message_result, username = self.__db.update_password_email(email=client_message["email"],
                                                                                         new_password=hashed_password)
             if success_result:
-                self.__send_email(email=client_message["email"], username=username, password=hashed_password)
+                self.__send_email(email=client_message["email"], username=username, password=client_message["password"])
         elif client_message["action"] == "password username":
             success_result, message_result = self.__db.update_password_username(username=client_message["username"],
                                                                                 new_password=hashed_password)
@@ -72,7 +72,7 @@ class ClientThread(threading.Thread):
             success_result, message_result = self.__db.add_note(filename=client_message["filename"],
                                                                 username=client_message["username"],
                                                                 tag=client_message["tag"],
-                                                                created=datetime.now(pytz.timezone("America/Chicago")))
+                                                                created=datetime.now(pytz.timezone("America/Chicago")).strftime("%Y-%m-%d"))
             Message.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,
                                    network_buffer_size=self.__network_buffer_size)
         elif client_message["action"] == "download":

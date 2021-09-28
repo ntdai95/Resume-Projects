@@ -34,7 +34,7 @@ class Database:
                     filename TEXT PRIMARY KEY,
                     username TEXT,
                     tag TEXT,
-                    created DATETIME,
+                    created TEXT,
                     FOREIGN KEY(username) REFERENCES users(username)
                     )""")
 
@@ -190,8 +190,6 @@ class Database:
                   ORDER BY filename ASC
                   """
             notes = cursor.execute(sql).fetchall()
-            for row in notes:
-                row[3] = row[3].strftime("%Y-%m-%d %H:%M")
             return True, notes
 
 
