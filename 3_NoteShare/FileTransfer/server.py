@@ -95,7 +95,7 @@ class ClientThread(threading.Thread):
 class Server:
     __server_socket = socket(AF_INET, SOCK_STREAM)
     __server_socket.bind((SERVER_IP, SERVER_PORT))
-    __server_socket.listen(1)
+    __server_socket.listen(5)
 
 
     @classmethod

@@ -2,8 +2,8 @@ import os
 import random
 import re
 import tkinter as tk
-from tkinter import messagebox
-from tkinter.constants import END
+from tkinter import messagebox, ttk
+from tkinter.constants import END, CENTER
 from PIL import Image, ImageTk
 from client import Client
 from models import Message
@@ -11,6 +11,7 @@ from models import Message
 
 USER = ""
 NOTES = []
+SHOW_NOTES = []
 
 
 class LoginPage(tk.Frame):
@@ -278,6 +279,28 @@ class DownloadPage(tk.Frame):
         Label = tk.Label(self, text="Available Notes:", bg="orange", font=("Arial Bold", 30))
         Label.place(x=320, y=60)
 
+        def show_notes():
+            win = tk.Tk()
+            win.geometry("700x350")
+            style = ttk.Style()
+            style.configure("Treeview", background="#383838", foreground="white", fieldbackground="red")
+
+            tree = ttk.Treeview(win, column=("filename", "username", "tag", "created"), show='headings', height=5)
+            tree.column("# 1", anchor=CENTER)
+            tree.heading("# 1", text="filename")
+            tree.column("# 2", anchor=CENTER)
+            tree.heading("# 2", text="username")
+            tree.column("# 3", anchor=CENTER)
+            tree.heading("# 3", text="tag")
+            tree.column("# 4", anchor=CENTER)
+            tree.heading("# 4", text="created")
+
+            for row in NOTES:
+                tree.insert('', 'end', text="1", values=(row[0], row[1], row[2], row[3]))
+
+            tree.pack()
+            win.mainloop()
+
         L1 = tk.Label(self, text="Search filename:", font=("Arial Bold", 20), bg='ivory')
         L1.place(x=40, y=200)
         T1 = tk.Entry(self, font=("Arial Bold", 20))
@@ -289,6 +312,7 @@ class DownloadPage(tk.Frame):
             else:
                 # Implement binary search
                 print(NOTES)
+                show_notes()
                 pass
 
         B1 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
@@ -300,6 +324,7 @@ class DownloadPage(tk.Frame):
             else:
                 # Implement mergesort by tag if selected
                 print(NOTES)
+                show_notes()
                 pass
         
         B3 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20), command=show_files)
@@ -323,7 +348,7 @@ class DownloadPage(tk.Frame):
                 download_message = Client().send_action_message(Message(action="download", filename=T2.get()).to_json())
                 messagebox.showinfo("Success", download_message["message"])
             else:
-                messagebox.showinfo("Error", "The requested filename does not exist. Please, enter" 
+                messagebox.showinfo("Error", "The requested filename does not exist. Please, enter " 
                                              "an existing filename without the .code extension!")
 
         B4 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)

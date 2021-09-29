@@ -12,7 +12,6 @@ SERVER_PORT = int(os.environ.get("SERVER_PORT"))
 class Client:
     def __init__(self) -> None:
         self.__client_socket = socket(AF_INET, SOCK_STREAM)
-        self.__client_socket.settimeout(30.0)
         self.__client_socket.connect((SERVER_IP, SERVER_PORT))
         self.__network_buffer_size = 4096
 
