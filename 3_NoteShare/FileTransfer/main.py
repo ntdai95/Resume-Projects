@@ -214,7 +214,7 @@ class UploadDownloadPage(tk.Frame):
                 messagebox.showinfo("Error", get_all_files_message["message"])
         
         B2 = tk.Button(self, text="Upload", font=("Arial", 20), 
-                       command=lambda: [controller.show_frame(UploadPage), get_all_filenames()])
+                       command=lambda: controller.show_frame(UploadPage))
         B2.place(x=720, y=680)
         
         B3 = tk.Button(self, text="Download", font=("Arial", 20), 
@@ -245,10 +245,8 @@ class UploadPage(tk.Frame):
         def upload_filename():
             if os.path.exists("{}.code".format(T1.get())):
                 upload_message = Client().send_action_message(Message(action="upload", username=USER,
-                                                                      filename=T1.get(), tag=T2.get()).to_json(),
-                                                                      filename=T1.get(), action="upload")
+                                                                      filename=T1.get(), tag=T2.get()).to_json())
                 if upload_message["success"]:
-                    Client().send_file(filename=T1.get())
                     messagebox.showinfo("Success", upload_message["message"])
                 else:
                     messagebox.showinfo("Error", upload_message["message"])
@@ -315,15 +313,14 @@ class DownloadPage(tk.Frame):
         
         L2 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
         L2.place(x=40, y=540)
-        T2 = tk.Entry(self, width=30, show='*', font=("Arial Bold", 20))
+        T2 = tk.Entry(self, width=30, font=("Arial Bold", 20))
         T2.place(x=290, y=540, width=490, height=40)
 
         def download_filename():
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
-            elif T2.get() in [row[1] for row in NOTES]:
-                download_message = Client().send_action_message(Message(action="download", filename=T2.get()).to_json(),
-                                                                        filename=T2.get(), action="download")
+            elif T2.get() in [row[0] for row in NOTES]:
+                download_message = Client().send_action_message(Message(action="download", filename=T2.get()).to_json())
                 messagebox.showinfo("Success", download_message["message"])
             else:
                 messagebox.showinfo("Error", "The requested filename does not exist. Please, enter" 
