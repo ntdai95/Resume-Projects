@@ -35,9 +35,9 @@ class Message:
 
 
     @classmethod
-    def receiving_file(cls, filename, received_file, client_socket, network_buffer_size):
+    def receiving_file(cls, filename, file_firs_part, client_socket, network_buffer_size):
         with open("{}.code".format(filename), "wb") as compressed_file:
-            compressed_file.write(received_file)
+            compressed_file.write(file_firs_part)
             while True:
                 bytes_data = client_socket.recv(network_buffer_size)
                 if len(bytes_data) < network_buffer_size:

@@ -50,7 +50,7 @@ class ClientThread(threading.Thread):
             separation_pos = client_message_raw.index(b'}') + 1
             client_message_encoded = client_message_raw[:separation_pos]
             client_message = Message.process_message(client_message_encoded)
-            received_file = client_message_raw[separation_pos:]
+            file_firs_part = client_message_raw[separation_pos:]
         
         if client_message["password"]:
             hashed_password = hashlib.sha256(client_message["password"].encode()).hexdigest()
@@ -79,7 +79,7 @@ class ClientThread(threading.Thread):
                                                                 username=client_message["username"],
                                                                 tag=client_message["tag"],
                                                                 created=datetime.now(pytz.timezone("America/Chicago")).strftime("%Y-%m-%d"))
-            Message.receiving_file(filename=client_message["filename"], received_file=received_file,
+            Message.receiving_file(filename=client_message["filename"], file_firs_part=file_firs_part,
                                    client_socket=self.__client_socket, network_buffer_size=self.__network_buffer_size)
         elif client_message["action"] == "download":
             # Message.sending_file(filename=client_message["filename"], client_socket=self.__client_socket, 
