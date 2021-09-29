@@ -30,15 +30,17 @@ class Message:
             while True:
                 bytes_data = compressed_file.read(network_buffer_size)
                 if not bytes_data:
-                    break
+                    return
                 client_socket.sendall(bytes_data)
 
 
     @classmethod
-    def receiving_file(cls, filename, client_socket, network_buffer_size):
+    def receiving_file(cls, filename, received_file, client_socket, network_buffer_size):
         with open("{}.code".format(filename), "wb") as compressed_file:
+            compressed_file.write(received_file)
             while True:
                 bytes_data = client_socket.recv(network_buffer_size)
-                if not bytes_data:
-                    break
+                if len(bytes_data) < network_buffer_size:
+                    compressed_file.write(bytes_data)
+                    return
                 compressed_file.write(bytes_data)

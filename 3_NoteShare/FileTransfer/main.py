@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import tkinter as tk
 from tkinter import messagebox
 from tkinter.constants import END
@@ -86,7 +87,9 @@ class LoginPage(tk.Frame):
             t5.place(x = 400, y=320, width=300, height=50)
             
             def create_account():
-                if t4.get() == t5.get():
+                if not re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', t3.get()):
+                    messagebox.showinfo("Error", "Please, enter a valid email address!")
+                elif t4.get() == t5.get():
                     register_message = Client().send_action_message(Message(action="register", username=t2.get(), 
                                                                             password=t4.get(), email=t3.get()).to_json())
                     if register_message["success"]:
@@ -108,13 +111,16 @@ class LoginPage(tk.Frame):
         B2.place(x=240, y=370)
 
         def change_password_email():
-            new_password = "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for _ in range(12)])
-            password_email_message = Client().send_action_message(Message(action="password email", email=T3.get(), 
-                                                                                    password=new_password).to_json())
-            if password_email_message["success"]:
-                messagebox.showinfo("Success", password_email_message["message"])
+            if not re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', T3.get()):
+                messagebox.showinfo("Error", "Please, enter a valid email address!")
             else:
-                messagebox.showinfo("Error", password_email_message["message"])
+                new_password = "".join([random.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") for _ in range(12)])
+                password_email_message = Client().send_action_message(Message(action="password email", email=T3.get(), 
+                                                                              password=new_password).to_json())
+                if password_email_message["success"]:
+                    messagebox.showinfo("Success", password_email_message["message"])
+                else:
+                    messagebox.showinfo("Error", password_email_message["message"])
 
         L3 = tk.Label(self, text="Type your email below, if you forgot your login credentials:",
                       font=("Arial Bold", 16), bg='ivory')

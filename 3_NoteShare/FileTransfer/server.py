@@ -44,8 +44,14 @@ class ClientThread(threading.Thread):
 
     def __run(self):
         client_message_raw = self.__client_socket.recv(self.__network_buffer_size)
-        client_message = Message.process_message(client_message_raw)
-
+        try:
+            client_message = Message.process_message(client_message_raw)
+        except UnicodeDecodeError:
+            separation_pos = client_message_raw.index(b'}') + 1
+            client_message_encoded = client_message_raw[:separation_pos]
+            client_message = Message.process_message(client_message_encoded)
+            received_file = client_message_raw[separation_pos:]
+        
         if client_message["password"]:
             hashed_password = hashlib.sha256(client_message["password"].encode()).hexdigest()
 
@@ -73,11 +79,11 @@ class ClientThread(threading.Thread):
                                                                 username=client_message["username"],
                                                                 tag=client_message["tag"],
                                                                 created=datetime.now(pytz.timezone("America/Chicago")).strftime("%Y-%m-%d"))
-            Message.receiving_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                   network_buffer_size=self.__network_buffer_size)
+            Message.receiving_file(filename=client_message["filename"], received_file=received_file,
+                                   client_socket=self.__client_socket, network_buffer_size=self.__network_buffer_size)
         elif client_message["action"] == "download":
-            Message.sending_file(filename=client_message["filename"], client_socket=self.__client_socket,
-                                 network_buffer_size=self.__network_buffer_size)
+            # Message.sending_file(filename=client_message["filename"], client_socket=self.__client_socket, 
+            #                      network_buffer_size=self.__network_buffer_size)
             success_result, message_result = True, "Your note has been donwloaded!"
 
         self.__client_socket.sendall(Message(success=success_result, message=message_result).to_json())
@@ -87,7 +93,7 @@ class ClientThread(threading.Thread):
 class Server:
     __server_socket = socket(AF_INET, SOCK_STREAM)
     __server_socket.bind((SERVER_IP, SERVER_PORT))
-    __server_socket.listen(5)
+    __server_socket.listen(1)
 
 
     @classmethod
