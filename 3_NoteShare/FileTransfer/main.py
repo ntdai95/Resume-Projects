@@ -243,12 +243,17 @@ class UploadPage(tk.Frame):
         T2 = tk.Entry(self, width = 30, font=("Arial Bold", 30))
         T2.place(x=40, y=420, width=860, height=60)
 
+        def clear_entries():
+            T1.delete(0, END)
+            T2.delete(0, END)
+
         def upload_filename():
             if os.path.exists("{}.code".format(T1.get())):
                 upload_message = Client().send_action_message(Message(action="upload", username=USER,
                                                                       filename=T1.get(), tag=T2.get()).to_json())
                 if upload_message["success"]:
                     messagebox.showinfo("Success", upload_message["message"])
+                    clear_entries()
                 else:
                     messagebox.showinfo("Error", upload_message["message"])
             else:
@@ -343,7 +348,43 @@ class DownloadPage(tk.Frame):
             elif choice == ():
                 messagebox.showinfo("Error", "Please, select a category to sort the notes by!")
             else:
-                # Implement mergesort by tag if selected
+                def mergeSort(array, sort_choice):
+                    if len(array) > 1:
+                        mid = len(array) // 2
+                        L = array[:mid]
+                        R = array[mid:]
+
+                        mergeSort(array=L, sort_choice=sort_choice)
+                        mergeSort(array=R, sort_choice=sort_choice)
+                
+                        i = j = k = 0
+                        while i < len(L) and j < len(R):
+                            if L[i][sort_choice] < R[j][sort_choice]:
+                                array[k] = L[i]
+                                i += 1
+                            else:
+                                array[k] = R[j]
+                                j += 1
+                            k += 1
+                
+                        while i < len(L):
+                            array[k] = L[i]
+                            i += 1
+                            k += 1
+                
+                        while j < len(R):
+                            array[k] = R[j]
+                            j += 1
+                            k += 1
+
+                global SHOW_NOTES
+                SHOW_NOTES = []
+                for row in NOTES:
+                    SHOW_NOTES.append(row)
+                
+                sort_choice = choice[0]
+                if sort_choice != 0 and len(SHOW_NOTES) > 1:
+                    mergeSort(array=SHOW_NOTES, sort_choice=sort_choice)
                 show_notes()
 
         list = Listbox(self, selectmode="SINGLE", font=16)
@@ -414,5 +455,5 @@ class Application(tk.Tk):
 
 if __name__ == "__main__":
     app = Application()
-    app.maxsize(1000,800)
+    app.maxsize(1000, 800)
     app.mainloop()
