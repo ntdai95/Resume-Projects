@@ -2,8 +2,8 @@ import os
 import random
 import re
 import tkinter as tk
-from tkinter import messagebox, ttk
-from tkinter.constants import END, CENTER
+from tkinter import messagebox, ttk, Listbox
+from tkinter.constants import END, CENTER, YES
 from PIL import Image, ImageTk
 from client import Client
 from models import Message
@@ -186,7 +186,7 @@ class UploadDownloadPage(tk.Frame):
             def change_password_username():
                 if t2.get() == t3.get():
                     password_username_message = Client().send_action_message(Message(action="password username", username=USER, 
-                                                                                   password=t2.get()).to_json())
+                                                                                     password=t2.get()).to_json())
                     if password_username_message["success"]:
                         messagebox.showinfo("Success", password_username_message["message"])
                     else:
@@ -272,33 +272,35 @@ class UploadPage(tk.Frame):
 
 class DownloadPage(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        
+        tk.Frame.__init__(self, parent)        
         self.configure(bg='light green')
-        
+
         Label = tk.Label(self, text="Available Notes:", bg="orange", font=("Arial Bold", 30))
         Label.place(x=320, y=60)
 
         def show_notes():
             win = tk.Tk()
-            win.geometry("700x350")
-            style = ttk.Style()
-            style.configure("Treeview", background="#383838", foreground="white", fieldbackground="red")
+            win.configure(bg="deep sky blue")
+            win.title("Files")
 
-            tree = ttk.Treeview(win, column=("filename", "username", "tag", "created"), show='headings', height=5)
-            tree.column("# 1", anchor=CENTER)
-            tree.heading("# 1", text="filename")
-            tree.column("# 2", anchor=CENTER)
-            tree.heading("# 2", text="username")
-            tree.column("# 3", anchor=CENTER)
-            tree.heading("# 3", text="tag")
-            tree.column("# 4", anchor=CENTER)
-            tree.heading("# 4", text="created")
+            tree = ttk.Treeview(win, column=("FILENAME:", "USERNAME:", "TAG:", "CREATED:"), show='headings', height=20)
+            tree.column("#1", anchor=CENTER)
+            tree.heading("#1", text="FILENAME:")
+            tree.column("#2", anchor=CENTER)
+            tree.heading("#2", text="USERNAME:")
+            tree.column("#3", anchor=CENTER)
+            tree.heading("#3", text="TAG:")
+            tree.column("#4", anchor=CENTER)
+            tree.heading("#4", text="CREATED:")
 
-            for row in NOTES:
+            for row in SHOW_NOTES:
                 tree.insert('', 'end', text="1", values=(row[0], row[1], row[2], row[3]))
-
-            tree.pack()
+            
+            tree.grid(row=0, column=0, sticky='nsew')
+            scrollbar = ttk.Scrollbar(win, orient=tk.VERTICAL, command=tree.yview)
+            tree.configure(yscroll=scrollbar.set)
+            scrollbar.grid(row=0, column=1, sticky='ns')
+            win.geometry("830x440")
             win.mainloop()
 
         L1 = tk.Label(self, text="Search filename:", font=("Arial Bold", 20), bg='ivory')
@@ -310,31 +312,51 @@ class DownloadPage(tk.Frame):
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
             else:
-                # Implement binary search
-                print(NOTES)
+                def binary_search(array, low, high, filename):
+                    if high >= low:
+                        middle = (high + low) // 2
+                        if array[middle][0] == filename:
+                            return middle
+                        elif array[middle][0] > filename:
+                            return binary_search(array, low, middle - 1, filename)
+                        else:
+                            return binary_search(array, middle + 1, high, filename)
+                    else:
+                        return -1
+                result = binary_search(NOTES, 0, len(NOTES) - 1, T1.get())
+
+                global SHOW_NOTES
+                SHOW_NOTES = []
+                if result != -1:
+                    SHOW_NOTES.append(NOTES[result])
                 show_notes()
-                pass
 
         B1 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
         B1.place(x=820, y=200)
 
-        def show_files():
+        S1 = tk.Label(self, text="Sort Categories:", bg="orange", font=("Arial Bold", 20))
+        S1.place(x=510, y=300)
+
+        def show_files(choice):
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
+            elif choice == ():
+                messagebox.showinfo("Error", "Please, select a category to sort the notes by!")
             else:
                 # Implement mergesort by tag if selected
-                print(NOTES)
                 show_notes()
-                pass
-        
-        B3 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20), command=show_files)
-        B3.place(x=300, y=360)
 
-        sort_by_tag = tk.IntVar()
-        sort_by_tag.set(0)
-        B2 = tk.Checkbutton(self, text="Sort\nby tag", variable=sort_by_tag,
-                            offvalue = 0, onvalue = 1, font=("Arial", 20), height=50, width=50)
-        B2.place(x=540, y=350, width= 110, height=70)
+        list = Listbox(self, selectmode="SINGLE", font=16)
+        list.pack(expand=YES, fill="both")
+        list.place(x=560, y=350, width=120, height=100)
+        
+        choices = ["FILENAME", "USERNAME", "TAG", "CREATED"]
+        for each_item in range(len(choices)):
+            list.insert(END, choices[each_item])
+            list.itemconfig(each_item, bg = "yellow" if each_item % 2 == 0 else "cyan")
+        
+        B2 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20), command=lambda: show_files(list.curselection()))
+        B2.place(x=260, y=360)
         
         L2 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
         L2.place(x=40, y=540)
@@ -351,20 +373,20 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error", "The requested filename does not exist. Please, enter " 
                                              "an existing filename without the .code extension!")
 
-        B4 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)
-        B4.place(x=800, y=540)
+        B3 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)
+        B3.place(x=800, y=540)
 
         def delete_user():
             global USER
             USER = ""
         
-        B5 = tk.Button(self, text="Logout", font=("Arial", 20), 
+        B4 = tk.Button(self, text="Logout", font=("Arial", 20), 
                        command=lambda: [controller.show_frame(LoginPage), delete_user()])
-        B5.place(x=720, y=680)
+        B4.place(x=720, y=680)
         
-        B6 = tk.Button(self, text="Back", font=("Arial", 20), 
+        B5 = tk.Button(self, text="Back", font=("Arial", 20), 
                        command=lambda: controller.show_frame(UploadDownloadPage))
-        B6.place(x=140, y=680)
+        B5.place(x=140, y=680)
         
         
 class Application(tk.Tk):
