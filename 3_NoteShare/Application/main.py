@@ -46,7 +46,7 @@ class LoginPage(tk.Frame):
 
         def signing_in():
             login_message = Client().send_action_message(Message(action="login", username=T1.get(),
-                                                               password=T2.get()).to_json())
+                                                                 password=T2.get()).to_json())
             if login_message["success"]:
                 global USER
                 USER = T1.get()
@@ -150,16 +150,16 @@ class UploadDownloadPage(tk.Frame):
         L1 = tk.Label(self, text="Uploading: Before uploading your .txt file, you need to\n"
                                  "compress it to a .code file. To do that, you need to open\n"
                                  "command prompt on Windows or terminal on Mac OS, navigate to\n"
-                                 "the current directory, and then type the following command:\n"
-                                 "java Huffman/Encode.java <filename without extensions>", 
+                                 "the Huffman directory, and then type the following command:\n"
+                                 "java Encode.java <filename without extensions>", 
                       bg = "light blue", font=("Arial Bold", 20))
         L1.place(x=40, y=220)
 
         L2 = tk.Label(self, text="Downloading: After downloading your .code file, you need to\n"
                                  "decompress it to a .txt file. To do that, you need to open\n"
                                  "command prompt on Windows or terminal on Mac OS, navigate to\n"
-                                 "the current directory, and then type the following command:\n"
-                                 "java Huffman/Decode.java <filename without extensions>", 
+                                 "the Huffman directory, and then type the following command:\n"
+                                 "java Decode.java <filename without extensions>", 
                       bg = "light green", font=("Arial Bold", 20))
         L2.place(x=40, y=440)
 
@@ -189,9 +189,9 @@ class UploadDownloadPage(tk.Frame):
                                                                                      password=t2.get()).to_json())
                     if password_username_message["success"]:
                         messagebox.showinfo("Success", password_username_message["message"])
+                        window.destroy()
                     else:
                         messagebox.showinfo("Error", password_username_message["message"])
-                    window.destroy()
                 else:
                     messagebox.showinfo("Error", "Passwords mismatched! Please, enter the same password for confirmation!")
                     
@@ -231,26 +231,25 @@ class UploadPage(tk.Frame):
         Label = tk.Label(self, text="Select your file!", bg="orange", font=("Arial Bold", 30))
         Label.place(x=330, y=60)
 
-        L1 = tk.Label(self, text="Type your filename without the .code extension:",
-                      font=("Arial Bold", 25), bg='ivory')
-        L1.place(x=40, y=200)
-        T1 = tk.Entry(self, font=("Arial Bold", 30))
-        T1.place(x=40, y=260, width=860, height=60)
-        
-        L2 = tk.Label(self, text="Type a tag that you want to associate with your file:",
-                      font=("Arial Bold", 25), bg='ivory')
-        L2.place(x=40, y=360)
-        T2 = tk.Entry(self, width = 30, font=("Arial Bold", 30))
-        T2.place(x=40, y=420, width=860, height=60)
+        def read_file():
+            pass
+
+        L1 = tk.Label(self, text="Type the filename to read:", font=("Arial Bold", 20), bg='ivory')
+        L1.place(x=40, y=180)
+        T1 = tk.Entry(self, width = 30, font=("Arial Bold", 20))
+        T1.place(x=40, y=240, width=780, height=40)
+        B1 = tk.Button(self, text="Read", font=("Arial", 16), bg="#ffc22a", command=read_file)
+        B1.place(x=840, y=240)
 
         def clear_entries():
-            T1.delete(0, END)
             T2.delete(0, END)
+            T3.delete(0, END)
 
         def upload_filename():
-            if os.path.exists("{}.code".format(T1.get())):
+            filepath = os.path.join(os.path.join(os.path.dirname( __file__ ), "..", "{}.code".format(T2.get())))
+            if os.path.exists(filepath):
                 upload_message = Client().send_action_message(Message(action="upload", username=USER,
-                                                                      filename=T1.get(), tag=T2.get()).to_json())
+                                                                      filename=T2.get(), tag=T3.get()).to_json())
                 if upload_message["success"]:
                     messagebox.showinfo("Success", upload_message["message"])
                     clear_entries()
@@ -259,20 +258,32 @@ class UploadPage(tk.Frame):
             else:
                 messagebox.showinfo("Error", "File not found! Please, enter a valid filename without the .code extension!")
 
-        B1 = tk.Button(self, text="Upload!", font=("Arial", 30), bg="#ffc22a", command=upload_filename)
-        B1.place(x=380, y=520)
+        L2 = tk.Label(self, text="Type your filename without the .code extension:",
+                      font=("Arial Bold", 20), bg='ivory')
+        L2.place(x=40, y=340)
+        T2 = tk.Entry(self, font=("Arial Bold", 20))
+        T2.place(x=40, y=400, width=860, height=40)
+
+        L3 = tk.Label(self, text="Type a tag that you want to associate with your file:",
+                      font=("Arial Bold", 20), bg='ivory')
+        L3.place(x=40, y=500)
+        T3 = tk.Entry(self, width = 30, font=("Arial Bold", 20))
+        T3.place(x=40, y=560, width=860, height=40)
+
+        B2 = tk.Button(self, text="Upload", font=("Arial", 20), bg="#ffc22a", command=upload_filename)
+        B2.place(x=400, y=680)
+
+        B3 = tk.Button(self, text="Back", font=("Arial", 20), 
+                       command=lambda: controller.show_frame(UploadDownloadPage))
+        B3.place(x=140, y=680)
 
         def delete_user():
             global USER
             USER = ""
 
-        B2 = tk.Button(self, text="Logout", font=("Arial", 20), 
+        B4 = tk.Button(self, text="Logout", font=("Arial", 20), 
                        command=lambda: [controller.show_frame(LoginPage), delete_user()])
-        B2.place(x=720, y=680)
-        
-        B3 = tk.Button(self, text="Back", font=("Arial", 20), 
-                       command=lambda: controller.show_frame(UploadDownloadPage))
-        B3.place(x=140, y=680)
+        B4.place(x=720, y=680)
 
 
 class DownloadPage(tk.Frame):
@@ -282,6 +293,16 @@ class DownloadPage(tk.Frame):
 
         Label = tk.Label(self, text="Available Notes:", bg="orange", font=("Arial Bold", 30))
         Label.place(x=320, y=60)
+
+        def read_file():
+            pass
+
+        L1 = tk.Label(self, text="Filename to read:", font=("Arial Bold", 20), bg='ivory')
+        L1.place(x=40, y=200)
+        T1 = tk.Entry(self, width = 30, font=("Arial Bold", 20))
+        T1.place(x=290, y=200, width=530, height=40)
+        B1 = tk.Button(self, text="Read", font=("Arial", 16), command=read_file)
+        B1.place(x=840, y=200)
 
         def show_notes():
             win = tk.Tk()
@@ -308,11 +329,6 @@ class DownloadPage(tk.Frame):
             win.geometry("830x440")
             win.mainloop()
 
-        L1 = tk.Label(self, text="Search filename:", font=("Arial Bold", 20), bg='ivory')
-        L1.place(x=40, y=200)
-        T1 = tk.Entry(self, font=("Arial Bold", 20))
-        T1.place(x=280, y=200, width=520, height=40)
-
         def search_filename():
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
@@ -328,7 +344,7 @@ class DownloadPage(tk.Frame):
                             return binary_search(array, middle + 1, high, filename)
                     else:
                         return -1
-                result = binary_search(NOTES, 0, len(NOTES) - 1, T1.get())
+                result = binary_search(NOTES, 0, len(NOTES) - 1, T2.get())
 
                 global SHOW_NOTES
                 SHOW_NOTES = []
@@ -336,30 +352,34 @@ class DownloadPage(tk.Frame):
                     SHOW_NOTES.append(NOTES[result])
                 show_notes()
 
-        B1 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
-        B1.place(x=820, y=200)
+        L2 = tk.Label(self, text="Search filename:", font=("Arial Bold", 20), bg='ivory')
+        L2.place(x=40, y=500)
+        T2 = tk.Entry(self, font=("Arial Bold", 20))
+        T2.place(x=280, y=500, width=520, height=40)
+        B2 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
+        B2.place(x=820, y=500)
 
-        S1 = tk.Label(self, text="Sort Categories:", bg="orange", font=("Arial Bold", 20))
-        S1.place(x=510, y=300)
-
-        def show_files(choice):
+        def show_files(category_choice, order_choice):
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
-            elif choice == ():
+            elif category_choice == ():
                 messagebox.showinfo("Error", "Please, select a category to sort the notes by!")
+            elif order_choice == ():
+                messagebox.showinfo("Error", "Please, select an order to sort the notes by!")
             else:
-                def mergeSort(array, sort_choice):
+                def mergeSort(array, category_choice, order_choice):
                     if len(array) > 1:
                         mid = len(array) // 2
                         L = array[:mid]
                         R = array[mid:]
 
-                        mergeSort(array=L, sort_choice=sort_choice)
-                        mergeSort(array=R, sort_choice=sort_choice)
+                        mergeSort(array=L, category_choice=category_choice, order_choice=order_choice)
+                        mergeSort(array=R, category_choice=category_choice, order_choice=order_choice)
                 
                         i = j = k = 0
                         while i < len(L) and j < len(R):
-                            if L[i][sort_choice] < R[j][sort_choice]:
+                            if (L[i][category_choice] < R[j][category_choice] and order_choice == 0) or \
+                               (L[i][category_choice] > R[j][category_choice] and order_choice == 1):
                                 array[k] = L[i]
                                 i += 1
                             else:
@@ -382,52 +402,66 @@ class DownloadPage(tk.Frame):
                 for row in NOTES:
                     SHOW_NOTES.append(row)
                 
-                sort_choice = choice[0]
-                if sort_choice != 0 and len(SHOW_NOTES) > 1:
-                    mergeSort(array=SHOW_NOTES, sort_choice=sort_choice)
+                if category_choice[0] != 0 and len(SHOW_NOTES) > 1:
+                    mergeSort(array=SHOW_NOTES, category_choice=category_choice[0], order_choice=order_choice[0])
+                elif category_choice[0] == 0 and order_choice[0] == 1:
+                    SHOW_NOTES.reverse()
                 show_notes()
 
-        list = Listbox(self, selectmode="SINGLE", font=16)
-        list.pack(expand=YES, fill="both")
-        list.place(x=560, y=350, width=120, height=100)
+        S1 = tk.Label(self, text="Sort Categories:", bg="orange", font=("Arial Bold", 20))
+        S1.place(x=90, y=300)
+        s1 = Listbox(self, selectmode="SINGLE", exportselection=0, font=16)
+        s1.pack(expand=YES, fill="both")
+        s1.place(x=140, y=350, width=120, height=100)
+        category_choices = ["FILENAME", "USERNAME", "TAG", "CREATED"]
+        for each_item in range(len(category_choices)):
+            s1.insert(END, category_choices[each_item])
+            s1.itemconfig(each_item, bg = "yellow" if each_item % 2 == 0 else "cyan")
         
-        choices = ["FILENAME", "USERNAME", "TAG", "CREATED"]
-        for each_item in range(len(choices)):
-            list.insert(END, choices[each_item])
-            list.itemconfig(each_item, bg = "yellow" if each_item % 2 == 0 else "cyan")
+        S2 = tk.Label(self, text="Sort Orders:", bg="orange", font=("Arial Bold", 20))
+        S2.place(x=420, y=320)
+        s2 = Listbox(self, selectmode="SINGLE", exportselection=0, font=16)
+        s2.pack(expand=YES, fill="both")
+        s2.place(x=430, y=370, width=140, height=50)
+        sort_choices = ["ASCENDING", "DESCENDING"]
+        for each_item in range(len(sort_choices)):
+            s2.insert(END, sort_choices[each_item])
+            s2.itemconfig(each_item, bg = "yellow" if each_item % 2 == 0 else "cyan")
         
-        B2 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20), command=lambda: show_files(list.curselection()))
-        B2.place(x=260, y=360)
-        
-        L2 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
-        L2.place(x=40, y=540)
-        T2 = tk.Entry(self, width=30, font=("Arial Bold", 20))
-        T2.place(x=290, y=540, width=490, height=40)
+        B3 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20),
+                       command=lambda: show_files(s1.curselection(), s2.curselection()))
+        B3.place(x=700, y=360)
 
         def download_filename():
             if NOTES == []:
                 messagebox.showinfo("Error", "There is no note file currently on the server!")
-            elif T2.get() in [row[0] for row in NOTES]:
-                download_message = Client().send_action_message(Message(action="download", filename=T2.get()).to_json())
+                T4.delete(0, END)
+            elif T4.get() in [row[0] for row in NOTES]:
+                download_message = Client().send_action_message(Message(action="download", filename=T4.get()).to_json())
                 messagebox.showinfo("Success", download_message["message"])
+                T4.delete(0, END)
             else:
                 messagebox.showinfo("Error", "The requested filename does not exist. Please, enter " 
                                              "an existing filename without the .code extension!")
 
-        B3 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)
-        B3.place(x=800, y=540)
+        L4 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
+        L4.place(x=40, y=580)
+        T4 = tk.Entry(self, width=30, font=("Arial Bold", 20))
+        T4.place(x=290, y=580, width=490, height=40)
+        B4 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)
+        B4.place(x=800, y=580)
+
+        B5 = tk.Button(self, text="Back", font=("Arial", 20), 
+                       command=lambda: controller.show_frame(UploadDownloadPage))
+        B5.place(x=140, y=680)
 
         def delete_user():
             global USER
             USER = ""
         
-        B4 = tk.Button(self, text="Logout", font=("Arial", 20), 
+        B6 = tk.Button(self, text="Logout", font=("Arial", 20), 
                        command=lambda: [controller.show_frame(LoginPage), delete_user()])
-        B4.place(x=720, y=680)
-        
-        B5 = tk.Button(self, text="Back", font=("Arial", 20), 
-                       command=lambda: controller.show_frame(UploadDownloadPage))
-        B5.place(x=140, y=680)
+        B6.place(x=720, y=680)
         
         
 class Application(tk.Tk):
