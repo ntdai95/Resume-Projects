@@ -9,11 +9,9 @@ class Database:
         self.__conn = sqlite3.connect(f"{name}.db")
         self.__create_tables(self.__conn)
 
-
     ########################
     #   Internal methods   #
     ########################
-
 
     def __create_tables(self, connection):
         """Create tables
@@ -38,22 +36,22 @@ class Database:
                     FOREIGN KEY(username) REFERENCES users(username)
                     )""")
 
-
     ########################
     #     User methods     #
     ########################
 
-
     def login(self, username, password):
         """Login
         Allows a user to login to the system.
-        Args: 
+        Args:
             username: the user id they are registered with
             password: the user's password as a hash
         Returns:
-            Success result: boolean whether the username and password combination exist in the database
-            Error/Success message: error message if the username and password combination does not 
-            match with the one registered in the database, otherwise returns nothing.
+            Success result: boolean whether the username and password
+            combination exist in the database
+            Error/Success message: error message if the username and
+            password combination does not match with the one registered
+            in the database, otherwise returns nothing.
         """
         cursor = self.__conn.cursor()
         with self.__conn:
@@ -61,16 +59,16 @@ class Database:
                   SELECT username, password
                   FROM users
                   WHERE
-                  username = ? 
-                  AND password = ? 
+                  username = ?
+                  AND password = ?
                   """
             values = (username, password)
             user = cursor.execute(sql, values).fetchone()
             if user:
                 return True, None
             else:
-                return False, "Invalid username or password! Please, provide the correct username or password!"
-    
+                return False, "Invalid username or password! Please, " \
+                              "provide the correct username or password!"
 
     def register(self, username, password, email):
         """Register
@@ -80,8 +78,10 @@ class Database:
             password: the password for this account
             email: the user's email
         Returns:
-            Success result: boolean whether username and password has been successfully registered
-            Error/Success message: error message if username or email already exists, otherwise returns confirmation message.
+            Success result: boolean whether username and password has
+            been successfully registered
+            Error/Success message: error message if username or email
+            already exists, otherwise returns confirmation message.
         """
         cursor = self.__conn.cursor()
         with self.__conn:
@@ -93,7 +93,8 @@ class Database:
             values = (username,)
             result = cursor.execute(sql, values).fetchone()
             if result:
-                return False, "Username has been used! Please, provide a unique username!"
+                return False, "Username has been used! Please, " \
+                              "provide a unique username!"
 
             sql = """
                   SELECT *
@@ -103,7 +104,8 @@ class Database:
             values = (email,)
             result = cursor.execute(sql, values).fetchone()
             if result:
-                return False, "Email address has been used! Please, provide a unique email address!"
+                return False, "Email address has been used! Please, " \
+                              "provide a unique email address!"
 
             sql = """
                   INSERT INTO users (username, password, email)
@@ -113,7 +115,6 @@ class Database:
             cursor.execute(sql, values)
             return True, "Account information sent to email address!"
 
-
     def update_password_email(self, email, new_password):
         """Update password by email address
         Updates the user password from old to new.
@@ -121,9 +122,12 @@ class Database:
             email: the user's email
             new_password: the new password the user will use
         Returns:
-            Success result: boolean whether the email address exists in the database
-            Error/Success message: error message if the email address does not exist, otherwise returns confirmation message.
-            Username: if there is an existing user with the requested email address in the database
+            Success result: boolean whether the email address exists
+            in the database
+            Error/Success message: error message if the email address
+            does not exist, otherwise returns confirmation message.
+            Username: if there is an existing user with the requested
+            email address in the database
         """
         cursor = self.__conn.cursor()
         with self.__conn:
@@ -135,7 +139,8 @@ class Database:
             values = (email,)
             result = cursor.execute(sql, values).fetchone()
             if result is None:
-                return False, "Email address has not been found. Please, enter your registered email address!", None
+                return False, "Email address has not been found. Please, " \
+                              "enter your registered email address!", None
 
             username = result[0]
             sql = """
@@ -145,8 +150,8 @@ class Database:
                   """
             values = (new_password, email)
             cursor.execute(sql, values)
-            return True, "New account information sent to your email address!", username
-
+            return True, "New account information sent to your " \
+                         "email address!", username
 
     def update_password_username(self, username, new_password):
         """Update password by username
@@ -155,8 +160,10 @@ class Database:
             username: the user's username
             new_password: the new password the user will use
         Returns:
-            Success result: True, since username must exist at this point because the user has already logged in
-            Success message: Confirmation message. It is able to update the new password because user definitely exists.
+            Success result: True, since username must exist at this
+            point because the user has already logged in
+            Success message: Confirmation message. It is able to update
+            the new password because user definitely exists.
         """
         cursor = self.__conn.cursor()
         with self.__conn:
@@ -169,18 +176,17 @@ class Database:
             cursor.execute(sql, values)
             return True, "Password has changed!"
 
-
     ########################
     #     Note methods     #
     ########################
-
 
     def get_all_notes(self):
         """Get all notes
         Retreive all of the notes in the system.
         Returns:
             Success result: True, even if there is no note in the database
-            Note list: a list of all notes rows with readable created datetime values
+            Note list: a list of all notes rows with readable created
+            datetime values
         """
         cursor = self.__conn.cursor()
         with self.__conn:
@@ -192,7 +198,6 @@ class Database:
             notes = cursor.execute(sql).fetchall()
             return True, notes
 
-
     def add_note(self, filename, username, tag, created):
         """Add a new note
         Adds a new note to the system.
@@ -201,8 +206,10 @@ class Database:
             filename: the name of the note file
             tag: the user selected tag associated with the file
         Returns:
-            Success result: boolean whether the filename is already exist in the database
-            Error/Success message: error message if the filename address exists, otherwise returns confirmation message.
+            Success result: boolean whether the filename is already
+            exist in the database
+            Error/Success message: error message if the filename address
+            exists, otherwise returns confirmation message.
         """
         cursor = self.__conn.cursor()
         with self.__conn:
