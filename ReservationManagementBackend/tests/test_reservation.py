@@ -2,19 +2,8 @@ from datetime import datetime
 from database import Database
 from reservation import Program
 
-# import os
-# to remove reservation_system to initialize db 
-# if os.path.exists("reservation_system"):
-#     os.remove("reservation_system")
 
-# if os.path.exists("test_db"):
-#     os.remove("test_db")
-
-# Tests for the layer of the system
-# Coverage: 91%                              
-
-
-db = Database('test_db')
+db = Database("tests/testing")
 program = Program(db)
 
 

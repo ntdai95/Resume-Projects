@@ -1,20 +1,9 @@
-# import os
-# to remove reservation_system to initialize db 
-# if os.path.exists("test_db"):
-#    os.remove("test_db")
-
 import json
 import pytest
 import main
 from datetime import datetime
 from uuid import uuid4
 from fastapi.testclient import TestClient
-
-
-# Tests for the stages of the system
-# Coverage: 93%
-
-# To run : (remove reservation_system file with import os) 
 
 
 client = TestClient(main.app)
@@ -87,7 +76,7 @@ def test_hold_post_error(data, response):
 @pytest.mark.parametrize("data, response", [
     (
             {'customer_id': '1',
-             'reservation_date': '2021-09-15',
+             'reservation_date': '2021-10-05',
              'thing_to_reserve': 'workshop1',
              'start_time': '12:30',
              'end_time': '13:30'},

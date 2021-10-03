@@ -1,18 +1,14 @@
 import os
 from database import Database
 
-# to remove reservation_system to initialize db 
-if os.path.exists("test_db"):
-    os.remove("test_db")
 
+# to remove previous testing database
+if os.path.exists("tests/testing.db"):
+    os.remove("tests/testing.db")
 
-# Tests for the layer of the system
-# Coverage: 84% (tried to increase up to 90% but with print statements, it is hard to do so)
+# To run : pytest test_database.py
+db = Database("tests/testing")
 
-# To run : pytest test_database.py                   
-
-
-db = Database("test_db")
 
 def test_add_user():
     user_id = db.add_user("Min", "client")

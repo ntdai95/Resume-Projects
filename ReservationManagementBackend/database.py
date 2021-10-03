@@ -12,7 +12,7 @@ class Database:
     """
     def __init__(self, name: str):
         self.name = name
-        self.conn = sqlite3.connect(name)
+        self.conn = sqlite3.connect("{}.db".format(name))
         self.create_tables(self.conn)
 
     #######################
