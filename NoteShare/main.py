@@ -170,25 +170,23 @@ class UploadDownloadPage(tk.Frame):
                          text="Important instructions before uploading"
                               "\nor after downloading your file!",
                          bg="red", font=("Arial Bold", 30))
-        title.place(x=120, y=40)
+        title.place(x=120, y=60)
 
         L1 = tk.Label(self,
-                      text="Uploading: Before uploading your .txt file, you need to\n"
-                           "compress it to a .code file. To do that, you need to open\n"
-                           "command prompt on Windows or terminal on Mac OS, navigate to\n"
-                           "the Huffman directory, and then type the following command:\n"
-                           "java Encode.java <filename without extensions>",
+                      text="Uploading:\n\n"
+                           "Before uploading your .txt file, you need to\n"
+                           "encode it to a .code file. To do that, please follow\n"
+                           "the instructions carefully in the README.md file.",
                       bg="light blue", font=("Arial Bold", 20))
-        L1.place(x=40, y=220)
+        L1.place(x=160, y=240)
 
         L2 = tk.Label(self,
-                      text="Downloading: After downloading your .code file, you need to\n"
-                           "decompress it to a .txt file. To do that, you need to open\n"
-                           "command prompt on Windows or terminal on Mac OS, navigate to\n"
-                           "the Huffman directory, and then type the following command:\n"
-                           "java Decode.java <filename without extensions>",
+                      text="Downloading:\n\n"
+                           "After downloading your .code file, you need to\n"
+                           "decode it to a .txt file. To do that, please follow\n"
+                           "the instructions carefully in the README.md file.",
                       bg="light green", font=("Arial Bold", 20))
-        L2.place(x=40, y=440)
+        L2.place(x=160, y=440)
 
         def change_password():
             window = tk.Tk()
@@ -266,8 +264,8 @@ class UploadPage(tk.Frame):
         Label.place(x=330, y=60)
 
         def read_file():
-            filepath = os.path.join(os.path.join(os.path.dirname(__file__), "..",
-                                    "{}.txt".format(T1.get())))
+            filepath = os.path.join(os.path.dirname(__file__),
+                                    "{}.txt".format(T1.get()))
             if os.path.exists(filepath):
                 speechpath = os.path.join(os.path.join(os.path.dirname(__file__), "audio",
                                           "{}.mp3".format(T1.get())))
@@ -306,11 +304,12 @@ class UploadPage(tk.Frame):
             T3.delete(0, END)
 
         def upload_filename():
-            filepath = os.path.join(os.path.join(os.path.dirname(__file__),
-                                                 "..",
-                                    "{}.code".format(T2.get())))
+            filepath = os.path.join(os.path.dirname(__file__),"{}.code".format(T2.get()))
             if os.path.exists(filepath):
-                upload_message = Client().send_action_message(Message(action="upload", username=USER, filename=T2.get(), tag=T3.get()).to_json())
+                upload_message = Client().send_action_message(Message(action="upload",
+                                                                      username=USER,
+                                                                      filename=T2.get(),
+                                                                      tag=T3.get()).to_json())
                 if upload_message["success"]:
                     messagebox.showinfo("Success",
                                         upload_message["message"])
@@ -367,8 +366,8 @@ class DownloadPage(tk.Frame):
         Label.place(x=320, y=60)
 
         def read_file():
-            filepath = os.path.join(os.path.join(os.path.dirname(__file__), "..",
-                                    "{}.txt".format(T1.get())))
+            filepath = os.path.join(os.path.dirname(__file__),
+                                    "{}.txt".format(T1.get()))
             if os.path.exists(filepath):
                 speechpath = os.path.join(os.path.join(os.path.dirname(__file__), "audio",
                                           "{}.mp3".format(T1.get())))

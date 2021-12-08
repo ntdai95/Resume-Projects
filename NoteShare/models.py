@@ -23,24 +23,24 @@ class Message:
         return json.loads(response)
 
     @classmethod
-    def sending_file(cls, filename, client_socket, buffer_size):
-        filepath = os.path.join(os.path.join(os.path.dirname(__file__), "..",
-                                "{}.code".format(filename)))
+    def sending_file(cls, filename, client_socket, network_buffer_size):
+        filepath = os.path.join(os.path.dirname(__file__),
+                                "{}.code".format(filename))
         with open(filepath, "rb") as compressed_file:
             while True:
-                bytes_data = compressed_file.read(buffer_size)
+                bytes_data = compressed_file.read(network_buffer_size)
                 if not bytes_data:
                     return
                 client_socket.sendall(bytes_data)
 
     @classmethod
-    def receiving_file(cls, filename, client_socket, buffer_size):
-        filepath = os.path.join(os.path.join(os.path.dirname(__file__), "..",
-                                "{}.code".format(filename)))
+    def receiving_file(cls, filename, client_socket, network_buffer_size):
+        filepath = os.path.join(os.path.dirname(__file__),
+                                "{}.code".format(filename))
         with open(filepath, "wb") as compressed_file:
             while True:
-                bytes_data = client_socket.recv(buffer_size)
-                if len(bytes_data) < buffer_size:
+                bytes_data = client_socket.recv(network_buffer_size)
+                if len(bytes_data) < network_buffer_size:
                     compressed_file.write(bytes_data)
                     return
                 compressed_file.write(bytes_data)
