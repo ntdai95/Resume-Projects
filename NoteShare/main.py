@@ -267,6 +267,8 @@ class UploadPage(tk.Frame):
             filepath = os.path.join(os.path.dirname(__file__),
                                     "{}.txt".format(T1.get()))
             if os.path.exists(filepath):
+                if not os.path.exists(os.path.join(os.path.dirname(__file__), "audio")):
+                    os.makedirs(os.path.join(os.path.dirname(__file__), "audio"))
                 speechpath = os.path.join(os.path.join(os.path.dirname(__file__), "audio",
                                           "{}.mp3".format(T1.get())))
                 if not os.path.exists(speechpath):
@@ -369,6 +371,8 @@ class DownloadPage(tk.Frame):
             filepath = os.path.join(os.path.dirname(__file__),
                                     "{}.txt".format(T1.get()))
             if os.path.exists(filepath):
+                if not os.path.exists(os.path.join(os.path.dirname(__file__), "audio")):
+                    os.makedirs(os.path.join(os.path.dirname(__file__), "audio"))
                 speechpath = os.path.join(os.path.join(os.path.dirname(__file__), "audio",
                                           "{}.mp3".format(T1.get())))
                 if not os.path.exists(speechpath):
