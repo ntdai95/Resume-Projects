@@ -6,4 +6,4 @@ Run Client:
 3. All the text files that you have downloaded will be stored in the current directory
 
 Run Server
-1. Type the following command to start the client: python server.py
+1. Type the following command to start the server: python server.py
