@@ -1,16 +1,9 @@
 # How to run the program:
 
-Encode File:
-1. Change line 2 of the EncodeFile.sh to: java Encode.java <text filename without extension>
-2. Run EncodeFile.sh
-
-Decode File:
-1. Change line 2 of the EncodeFile.sh to: java Decode.java <text filename without extension>
-2. Run DecodeFile.sh
-
-
 Run Client:
-1. Type the following command to start the client: python main.py
+1. Put all your text files that you want to send in the current directory
+2. Type the following command to start the client: python main.py
+3. All the text files that you have downloaded will be stored in the current directory
 
 Run Server
 1. Type the following command to start the client: python server.py

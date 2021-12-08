@@ -1,2 +1,2 @@
 cd Huffman
-java Encode.java hamlet
+java Encode.java "$1"

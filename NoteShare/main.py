@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 from gtts import gTTS
 from client import Client
 from models import Message
+import subprocess
 
 
 USER = ""
@@ -167,26 +168,9 @@ class UploadDownloadPage(tk.Frame):
         label.place(x=0, y=0)
 
         title = tk.Label(self,
-                         text="Important instructions before uploading"
-                              "\nor after downloading your file!",
+                         text="Please, select one of the options below!",
                          bg="red", font=("Arial Bold", 30))
         title.place(x=120, y=60)
-
-        L1 = tk.Label(self,
-                      text="Uploading:\n\n"
-                           "Before uploading your .txt file, you need to\n"
-                           "encode it to a .code file. To do that, please follow\n"
-                           "the instructions carefully in the README.md file.",
-                      bg="light blue", font=("Arial Bold", 20))
-        L1.place(x=160, y=240)
-
-        L2 = tk.Label(self,
-                      text="Downloading:\n\n"
-                           "After downloading your .code file, you need to\n"
-                           "decode it to a .txt file. To do that, please follow\n"
-                           "the instructions carefully in the README.md file.",
-                      bg="light green", font=("Arial Bold", 20))
-        L2.place(x=160, y=440)
 
         def change_password():
             window = tk.Tk()
@@ -233,8 +217,8 @@ class UploadDownloadPage(tk.Frame):
             window.mainloop()
 
         B1 = tk.Button(self, text="Change Password!", bg="purple",
-                       font=("Arial", 20), command=change_password)
-        B1.place(x=360, y=680)
+                       font=("Arial", 30), command=change_password)
+        B1.place(x=300, y=260)
 
         def get_all_filenames():
             get_all_files_message = Client().send_action_message(Message(action="get all files").to_json())
@@ -244,14 +228,14 @@ class UploadDownloadPage(tk.Frame):
             else:
                 messagebox.showinfo("Error", get_all_files_message["message"])
 
-        B2 = tk.Button(self, text="Upload", font=("Arial", 20),
+        B2 = tk.Button(self, text="Upload File", font=("Arial", 30),
                        command=lambda: controller.show_frame(UploadPage))
-        B2.place(x=720, y=680)
+        B2.place(x=370, y=420)
 
-        B3 = tk.Button(self, text="Download", font=("Arial", 20),
+        B3 = tk.Button(self, text="Download File", font=("Arial", 30),
                        command=lambda: [controller.show_frame(DownloadPage),
                                         get_all_filenames()])
-        B3.place(x=120, y=680)
+        B3.place(x=350, y=580)
 
 
 class UploadPage(tk.Frame):
@@ -306,12 +290,14 @@ class UploadPage(tk.Frame):
             T3.delete(0, END)
 
         def upload_filename():
-            filepath = os.path.join(os.path.dirname(__file__),"{}.code".format(T2.get()))
+            filepath = os.path.join(os.path.dirname(__file__),"{}.txt".format(T2.get()))
             if os.path.exists(filepath):
+                subprocess.call(f"EncodeFile.sh {T2.get()}", shell=True)
                 upload_message = Client().send_action_message(Message(action="upload",
                                                                       username=USER,
                                                                       filename=T2.get(),
                                                                       tag=T3.get()).to_json())
+                subprocess.call(f"del {T2.get()}.code", shell=True)
                 if upload_message["success"]:
                     messagebox.showinfo("Success",
                                         upload_message["message"])
@@ -566,6 +552,8 @@ class DownloadPage(tk.Frame):
                 T4.delete(0, END)
             elif T4.get() in [row[0] for row in NOTES]:
                 download_message = Client().send_action_message(Message(action="download", filename=T4.get()).to_json())
+                subprocess.call(f"DecodeFile.sh {T4.get()}", shell=True)
+                subprocess.call(f"del {T4.get()}.code", shell=True)
                 messagebox.showinfo("Success", download_message["message"])
                 T4.delete(0, END)
             else:
