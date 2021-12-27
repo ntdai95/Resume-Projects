@@ -4,15 +4,19 @@ import os
 
 class Message:
     def __init__(self, action=None, success=None, message=None, username=None,
-                 password=None, email=None, filename=None, tag=None):
+                 receiving_username=None, email_message=None, password=None,
+                 email=None, filename=None, tag=None, topic=None):
         self.action = action
         self.success = success
         self.message = message
         self.username = username
+        self.receiving_username = receiving_username 
         self.password = password
         self.email = email
+        self.email_message = email_message
         self.filename = filename
         self.tag = tag
+        self.topic = topic
 
     def to_json(self):
         return json.dumps(vars(self)).encode(encoding="utf-8")

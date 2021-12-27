@@ -32,13 +32,47 @@ class Database:
                     filename TEXT PRIMARY KEY,
                     username TEXT,
                     tag TEXT,
-                    created TEXT,
+                    created DATETIME,
+                    FOREIGN KEY(username) REFERENCES users(username)
+                    )""")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS requests (
+                    topic TEXT PRIMARY KEY,
+                    username TEXT,
+                    created DATETIME,
                     FOREIGN KEY(username) REFERENCES users(username)
                     )""")
 
     ########################
     #     User methods     #
     ########################
+
+    def get_user_email(self, username):
+        """Get user's email address by username
+        Retrieve the user's email address to send out email message.
+        Args:
+            username: the user id they are registered with
+        Returns:
+            Success result: boolean whether the username exist in the
+            database
+            Email: the email address associated with the input username
+            found in the database, otherwise returns nothing
+            Error/Success message: error message if the username is not
+            found in the database, otherwise returns a success message.
+        """
+        cursor = self.__conn.cursor()
+        with self.__conn:
+            sql = """
+                  SELECT *
+                  FROM users
+                  WHERE username = ?
+                  """
+            values = (username,)
+            result = cursor.execute(sql, values).fetchone()
+        if result:
+            return True, result[2], "Email sent to user!"
+        else:
+            return False, None, "No such user found in the database."
 
     def login(self, username, password):
         """Login
@@ -185,7 +219,7 @@ class Database:
         Retreive all of the notes in the system.
         Returns:
             Success result: True, even if there is no note in the database
-            Note list: a list of all notes rows with readable created
+            Note list: a list of all note rows with readable created
             datetime values
         """
         cursor = self.__conn.cursor()
@@ -205,6 +239,7 @@ class Database:
             username: the username of the user who uploads the file
             filename: the name of the note file
             tag: the user selected tag associated with the file
+            created: the date when the note was added to the database
         Returns:
             Success result: boolean whether the filename is already
             exist in the database
@@ -230,3 +265,95 @@ class Database:
             values = (filename, username, tag, created)
             cursor.execute(sql, values)
             return True, "Your note has been uploaded!"
+
+    ########################
+    #    Request methods   #
+    ########################
+
+    def get_all_requests(self):
+        """Get all current requests
+        Retrieve all available requests in the system.
+        Returns:
+            Success result: True, even if there is no request in the database
+            Request list: a list of all request rows with readable created
+            datetime values
+        """
+        cursor = self.__conn.cursor()
+        with self.__conn:
+            sql = """
+                  SELECT *
+                  FROM requests
+                  ORDER BY topic ASC
+                  """
+            requests = cursor.execute(sql).fetchall()
+            return True, requests
+
+    def add_request(self, topic, username, created):
+        """Add a new request
+        Adds a new request to the system.
+        Args:
+            topic: the topic of the request
+            username: the username of the user who adds the request
+            created: the date when the request was added to the database
+        Returns:
+            Success result: boolean whether the request is already
+            exist in the database
+            Error/Success message: error message if the request address
+            exists, otherwise returns confirmation message.
+        """
+        cursor = self.__conn.cursor()
+        with self.__conn:
+            sql = """
+                  SELECT *
+                  FROM requests
+                  WHERE topic = ?
+                  """
+            values = (topic,)
+            result = cursor.execute(sql, values).fetchone()
+            if result:
+                return False, "Request topic has been used! Please, " \
+                              "provide a unique request topic!"
+
+            sql = """
+                  INSERT INTO requests (topic, username, created)
+                  VALUES (?, ?, ?)
+                  """
+            values = (topic, username, created)
+            cursor.execute(sql, values)
+            return True, "Request has been added!"
+
+    def delete_request(self, topic, username):
+        """Delete an existing request
+        Adds an existing request from the system.
+        Args:
+            topic: the topic of the request
+            username: the username of the user who added the request or
+            internal for old request deletions
+        Returns:
+            Success result: boolean whether the request is already
+            exist in the database
+            Error/Success message: error message if the request address
+            does not exists or the user did not created the deleting
+            request, otherwise returns confirmation message.
+        """
+        cursor = self.__conn.cursor()
+        with self.__conn:
+            if username != "internal":
+                sql = """
+                    SELECT *
+                    FROM requests
+                    WHERE topic = ? AND username = ?
+                    """
+                values = (topic, username)
+                result = cursor.execute(sql, values).fetchone()
+                if not result:
+                    return False, "Request topic does not exist or " \
+                                  "you have not created this request! " \
+                                  "Therefore, request deletion was unsuccessful!"
+            sql = """
+                  DELETE FROM requests
+                  WHERE topic = ?
+                  """
+            value = (topic,)
+            cursor.execute(sql, value).fetchone()
+            return True, "Request has been deleted!"
