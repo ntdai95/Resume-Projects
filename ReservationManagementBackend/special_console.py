@@ -96,4 +96,9 @@ class SpecialClient:
 
 
 if __name__ == "__main__":
+    # deployed locally:
+    # SpecialClient().program()
+
+    # deployed url:
+    # http://linux5.cs.uchicago.edu
     SpecialClient(url='http://linux5.cs.uchicago.edu:51225').program()
