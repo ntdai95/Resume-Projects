@@ -441,7 +441,7 @@ class UploadPage(tk.Frame):
         T3.place(x=40, y=560, width=875, height=40)
 
         B2 = tk.Button(self, text="Upload", font=("Arial", 20), bg="#ffc22a", command=upload_filename)
-        B2.place(x=400, y=680)
+        B2.place(x=420, y=680)
 
         B3 = tk.Button(self, text="Back", font=("Arial", 20), command=lambda: controller.show_frame(MainPage))
         B3.place(x=140, y=680)
