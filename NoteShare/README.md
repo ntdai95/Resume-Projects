@@ -1,4 +1,4 @@
-***Note: You need to create a .env file with EMAIL_ADDRESS=<email address as string>, EMAIL_PASSWORD=<email password as string>, SERVER_IP=<server ip address as string>, and SERVER_PORT=<server port address as integer> environment variables.***
+***Note: You need to create a .env file with EMAIL_ADDRESS=<app_email_address_as_string>, EMAIL_PASSWORD=<app_email_password_as_string>, SERVER_IP=<server_ip_address_as_string>, and SERVER_PORT=<server_port_address_as_integer> environment variables.***
 
 # How to run the program:
 

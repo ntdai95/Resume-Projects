@@ -1,4 +1,4 @@
-***Note: You need to create a .env file with EMAIL_ADDRESS=<email_address> and EMAIL_PASSWORD=<email_password> environment variables.***
+***Note: You need to create a .env file with EMAIL_ADDRESS=<app_email_address_as_string> and EMAIL_PASSWORD=<app_email_password_as_string> environment variables.***
 
 # How To Run The Program Remotely
 
