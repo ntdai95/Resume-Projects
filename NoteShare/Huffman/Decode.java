@@ -10,7 +10,7 @@ public class Decode {
 
     public static void main(String[] args) throws IOException {
         String inFile = "../" + args[0] + ".code";
-        String outputFile = "../" + args[0] + ".txt";
+        String outputFile = "../" + args[0];
         
         // open encoded file, open output, build tree, decode
         BitInputStream input = new BitInputStream(inFile);

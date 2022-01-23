@@ -399,21 +399,22 @@ class UploadPage(tk.Frame):
                 pg.mixer.music.play()
                 T1.delete(0, END)
             else:
-                messagebox.showinfo("Error", "File not found! Please, enter a valid filename without the .txt extension!")
+                messagebox.showinfo("Error", "File not found. Note that only .txt files can be read!\n"
+                                             "Please, enter a valid filename without the .txt extension!")
 
-        L1 = tk.Label(self, text="Type your filename to read first line without the .txt extension:", font=("Arial Bold", 20), bg='ivory')
+        L1 = tk.Label(self, text="Type your filename without the .txt extension to read the first line:", font=("Arial Bold", 20), bg='ivory')
         L1.place(x=40, y=180)
         T1 = tk.Entry(self, width=30, font=("Arial Bold", 20))
-        T1.place(x=40, y=240, width=780, height=40)
+        T1.place(x=40, y=240, width=795, height=40)
         B1 = tk.Button(self, text="Read", font=("Arial", 16), bg="#ffc22a", command=read_file)
-        B1.place(x=840, y=240)
+        B1.place(x=850, y=240)
 
         def clear_entries():
             T2.delete(0, END)
             T3.delete(0, END)
 
         def upload_filename():
-            filepath = os.path.join(os.path.dirname(__file__), "{}.txt".format(T2.get()))
+            filepath = os.path.join(os.path.dirname(__file__), T2.get())
             if os.path.exists(filepath):
                 subprocess.call(f"EncodeFile.sh {T2.get()}", shell=True)
                 upload_message = Client().send_action_message(Message(action="upload",
@@ -427,17 +428,17 @@ class UploadPage(tk.Frame):
                 else:
                     messagebox.showinfo("Error", upload_message["message"])
             else:
-                messagebox.showinfo("Error", "File not found! Please, enter a valid filename without the .txt extension!")
+                messagebox.showinfo("Error", "File not found! Please, enter a valid filename with the file extension!")
 
-        L2 = tk.Label(self, text="Type your filename without the .txt extension:", font=("Arial Bold", 20), bg='ivory')
+        L2 = tk.Label(self, text="Type your filename with the file extension:", font=("Arial Bold", 20), bg='ivory')
         L2.place(x=40, y=340)
         T2 = tk.Entry(self, font=("Arial Bold", 20))
-        T2.place(x=40, y=400, width=860, height=40)
+        T2.place(x=40, y=400, width=875, height=40)
 
         L3 = tk.Label(self, text="Type a tag that you want to associate with your file:", font=("Arial Bold", 20), bg='ivory')
         L3.place(x=40, y=500)
         T3 = tk.Entry(self, width=30, font=("Arial Bold", 20))
-        T3.place(x=40, y=560, width=860, height=40)
+        T3.place(x=40, y=560, width=875, height=40)
 
         B2 = tk.Button(self, text="Upload", font=("Arial", 20), bg="#ffc22a", command=upload_filename)
         B2.place(x=400, y=680)
@@ -484,14 +485,15 @@ class DownloadPage(tk.Frame):
                 pg.mixer.music.play()
                 T1.delete(0, END)
             else:
-                messagebox.showinfo("Error", "File not found! Please, enter a valid filename without the .txt extension!")
+                messagebox.showinfo("Error", "File not found. Note that only .txt files can be read!\n"
+                                             "Please, enter a valid filename without the .txt extension!")
 
-        L1 = tk.Label(self, text="Filename to read:", font=("Arial Bold", 20), bg='ivory')
-        L1.place(x=40, y=200)
+        L1 = tk.Label(self, text="Type your filename without the .txt extension to read the first line:", font=("Arial Bold", 20), bg='ivory')
+        L1.place(x=35, y=180)
         T1 = tk.Entry(self, width=30, font=("Arial Bold", 20))
-        T1.place(x=290, y=200, width=530, height=40)
+        T1.place(x=35, y=240, width=798, height=40)
         B1 = tk.Button(self, text="Read", font=("Arial", 16), command=read_file)
-        B1.place(x=840, y=200)
+        B1.place(x=848, y=240)
 
         def show_notes():
             win = tk.Tk()
@@ -545,11 +547,11 @@ class DownloadPage(tk.Frame):
                 show_notes()
 
         L2 = tk.Label(self, text="Search filename:", font=("Arial Bold", 20), bg='ivory')
-        L2.place(x=40, y=500)
+        L2.place(x=40, y=510)
         T2 = tk.Entry(self, font=("Arial Bold", 20))
-        T2.place(x=280, y=500, width=520, height=40)
+        T2.place(x=280, y=510, width=530, height=40)
         B2 = tk.Button(self, text="Search", font=("Arial", 16), command=search_filename)
-        B2.place(x=820, y=500)
+        B2.place(x=825, y=510)
 
         def show_files(category_choice, order_choice):
             if NOTES == []:
@@ -605,20 +607,20 @@ class DownloadPage(tk.Frame):
                 show_notes()
 
         S1 = tk.Label(self, text="Sort Categories:", bg="orange", font=("Arial Bold", 20))
-        S1.place(x=90, y=300)
+        S1.place(x=90, y=320)
         s1 = Listbox(self, selectmode="SINGLE", exportselection=0, font=16)
         s1.pack(expand=YES, fill="both")
-        s1.place(x=140, y=350, width=120, height=100)
+        s1.place(x=140, y=370, width=120, height=100)
         category_choices = ["FILENAME", "USERNAME", "TAG", "CREATED"]
         for each_item in range(len(category_choices)):
             s1.insert(END, category_choices[each_item])
             s1.itemconfig(each_item, bg="yellow" if each_item % 2 == 0 else "cyan")
 
         S2 = tk.Label(self, text="Sort Orders:", bg="orange", font=("Arial Bold", 20))
-        S2.place(x=420, y=320)
+        S2.place(x=420, y=350)
         s2 = Listbox(self, selectmode="SINGLE", exportselection=0, font=16)
         s2.pack(expand=YES, fill="both")
-        s2.place(x=430, y=370, width=140, height=50)
+        s2.place(x=430, y=400, width=140, height=50)
         sort_choices = ["ASCENDING", "DESCENDING"]
         for each_item in range(len(sort_choices)):
             s2.insert(END, sort_choices[each_item])
@@ -626,7 +628,7 @@ class DownloadPage(tk.Frame):
 
         B3 = tk.Button(self, text="Show Notes", bg="dark orange", font=("Arial", 20),
                        command=lambda: show_files(s1.curselection(), s2.curselection()))
-        B3.place(x=700, y=360)
+        B3.place(x=692, y=370)
 
         def download_filename():
             if NOTES == []:
@@ -642,14 +644,14 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error",
                                     "The requested filename does not exist. "
                                     "Please, enter an existing filename "
-                                    "without the .txt extension!")
+                                    "with the file extension!")
 
         L4 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
-        L4.place(x=40, y=580)
+        L4.place(x=40, y=590)
         T4 = tk.Entry(self, width=30, font=("Arial Bold", 20))
-        T4.place(x=290, y=580, width=490, height=40)
+        T4.place(x=290, y=590, width=495, height=40)
         B4 = tk.Button(self, text="Download", font=("Arial", 16), command=download_filename)
-        B4.place(x=800, y=580)
+        B4.place(x=800, y=590)
 
         B5 = tk.Button(self, text="Back", font=("Arial", 20), command=lambda: controller.show_frame(MainPage))
         B5.place(x=140, y=680)

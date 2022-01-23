@@ -10,7 +10,7 @@ public class Encode {
     public static final int CHAR_MAX = 256;  // max char value to be encoded
 
     public static void main(String[] args) throws IOException {
-        String inFile = "../" + args[0] + ".txt";
+        String inFile = "../" + args[0];
         String outputFile = "../" + args[0] + ".code";
         
         // open input file and count character frequencies
