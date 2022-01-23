@@ -146,4 +146,6 @@ Facility managers can search for users using the first letter (or few letters) o
 
 Documentation can be found at the link here: [http://linux5.cs.uchicago.edu:51225/docs](http://linux5.cs.uchicago.edu:51225/docs)
 
-*** You must have a .env file with EMAIL_ADDRESS=<email_address> and EMAIL_PASSWORD=<email_password> environment variables.
+
+
+*** You must have a .env file with EMAIL_ADDRESS=<email_address> and EMAIL_PASSWORD=<email_password> environment variables. ***
