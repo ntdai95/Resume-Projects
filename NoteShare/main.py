@@ -642,7 +642,7 @@ class DownloadPage(tk.Frame):
                 messagebox.showinfo("Error",
                                     "The requested filename does not exist. "
                                     "Please, enter an existing filename "
-                                    "without the .code extension!")
+                                    "without the .txt extension!")
 
         L4 = tk.Label(self, text="File to download:", font=("Arial Bold", 20), bg='ivory')
         L4.place(x=40, y=580)
