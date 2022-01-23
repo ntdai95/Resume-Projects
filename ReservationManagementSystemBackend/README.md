@@ -1,3 +1,5 @@
+***You must have a .env file with EMAIL_ADDRESS=<email_address> and EMAIL_PASSWORD=<email_password> environment variables.***
+
 # How To Run The Program Remotely
 
 The reservation server is currently running on the U Chicago Linux server #5. To use the reservation client, all you need to do is run the client program locally with the following command:\
@@ -145,5 +147,3 @@ Facility managers can search for users using the first letter (or few letters) o
 # API Documentation
 
 Documentation can be found at the link here: [http://linux5.cs.uchicago.edu:51225/docs](http://linux5.cs.uchicago.edu:51225/docs)
-
-***You must have a .env file with EMAIL_ADDRESS=<email_address> and EMAIL_PASSWORD=<email_password> environment variables.***
