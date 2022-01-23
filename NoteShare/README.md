@@ -8,4 +8,4 @@ Run Client:
 2. Type the following command to start the client: python main.py
 3. All the files that you have downloaded will be stored in the current directory
 
-* You must have a .env file with EMAIL_ADDRESS=<email_address>, EMAIL_PASSWORD=<email_password>, SERVER_IP=<server_ip>, and SERVER_PORT=<server_port> variables.
+*** You must have a .env file with EMAIL_ADDRESS=<email_address>, EMAIL_PASSWORD=<email_password>, SERVER_IP=<server_ip>, and SERVER_PORT=<server_port> variables.
