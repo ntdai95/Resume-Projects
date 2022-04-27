@@ -17,11 +17,12 @@ function signup() {
             localStorage.setItem('ntdai95_belay_authkey', data.authkey);
             localStorage.setItem('ntdai95_belay_username', username);
 
-            let pushStateState = {"authkey": data.authkey, "username": username};
+            history.state["authkey"] = data.authkey;
+            history.state["username"] = username;
+            let pushStateState = history.state;
             let pushStateUnused = null;
             let pushStateUrl = null;
             if (magiclink !== null && magiclink !== "null") {
-                pushStateState = {...pushStateState, ...history.state};
                 pushStateUnused = "User Entered Page";
                 pushStateUrl = magiclink;
                 localStorage.setItem('ntdai95_belay_magiclink', null);
@@ -62,11 +63,12 @@ function login() {
             localStorage.setItem('ntdai95_belay_authkey', data.authkey);
             localStorage.setItem('ntdai95_belay_username', username);
 
-            let pushStateState = {"authkey": data.authkey, "username": username};
+            history.state["authkey"] = data.authkey;
+            history.state["username"] = username;
+            let pushStateState = history.state;
             let pushStateUnused = null;
             let pushStateUrl = null;
             if (magiclink !== null && magiclink !== "null") {
-                pushStateState = {...pushStateState, ...history.state};
                 pushStateUnused = "User Entered Page";
                 pushStateUrl = magiclink;
                 localStorage.setItem('ntdai95_belay_magiclink', null);
@@ -172,9 +174,8 @@ function startChannelPolling() {
 
 
 function goToChannel(channel_id) {
-    let authkey = localStorage.getItem("ntdai95_belay_authkey");
-    let username = localStorage.getItem("ntdai95_belay_username");
-    let pushStateState = {"authkey": authkey, "username": username, "channel_id": channel_id};
+    history.state["channel_id"] = channel_id;
+    let pushStateState = history.state;
     let pushStateUnused = "Channel Page";
     let pushStateUrl = "http://127.0.0.1:5000/channel/" + channel_id;
 
@@ -278,9 +279,8 @@ function startMessagePolling() {
 
 
 function goToThread(message_id) {
-    let authkey = localStorage.getItem("ntdai95_belay_authkey");
-    let username = localStorage.getItem("ntdai95_belay_username");
-    let pushStateState = {"authkey": authkey, "username": username, "channel_id": history.state['channel_id'], "message_id": message_id};
+    history.state["message_id"] = message_id;
+    let pushStateState = history.state;
     let pushStateUnused = "Thread Page";
     let pushStateUrl = "http://127.0.0.1:5000/channel/" + history.state['channel_id'] + "/thread/" + message_id;
 
@@ -333,7 +333,6 @@ function startReplyPolling() {
     .then(data => {
         if (data.success == true) {
             let threadContentPost = document.querySelector(".threadContent .post");
-
             if (threadContentPost.getAttribute("id") != data.message[0]) {
                 threadContentPost.setAttribute("id", "");
                 threadContentPost.innerHTML = "";
