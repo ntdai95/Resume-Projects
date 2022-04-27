@@ -33,6 +33,7 @@ class Database:
             used_authkeys = []
             for user in all_users:
                 used_authkeys.append(user[1])
+
             while True:
                 authkey = str(uuid4())
                 if authkey not in used_authkeys:
