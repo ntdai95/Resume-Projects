@@ -102,6 +102,10 @@ message content {
     margin-top: 10px;
 }
 
+message img {
+    width: 300px;
+}
+
 message button {
     margin-top: 10px;
 }

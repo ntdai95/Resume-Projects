@@ -141,7 +141,7 @@ UI and Responsive Layout (8 points)
   link they can click to navigate back to the channel list. (NOT DONE)
 - Parse image URLs that appear in messages and display the images at the end of
   the message. Hint: you may use the web to help you find an appropriate regular
-  expression. (NOT DONE)
+  expression.
 - Display the number of unread messages per channel (NOT DONE)
 - For each message with replies, display the number of replies to that message.
 

@@ -244,7 +244,25 @@ function startMessagePolling() {
                         let author = document.createElement('author');
                         author.innerHTML = messages[i][2];
                         let content = document.createElement('content');
-                        content.innerHTML = decodeURIComponent(messages[i][1]);
+                        let text = decodeURIComponent(messages[i][1]);
+                        let url = getImageURLs(text);
+                        if (url) {
+                            for (let i = 0; i < url.length; i++) {
+                                text = text.replace(url[i][0], "");
+                            }
+
+                            content.innerHTML = text;
+                            for (let i = 0; i < url.length; i++) {
+                                let p = document.createElement("p");
+                                let img = document.createElement("img");
+                                img.setAttribute("src", url[i][0]);
+                                p.appendChild(img);
+                                content.appendChild(p);
+                            }
+                        } else {
+                            content.innerHTML = text;
+                        }
+
                         let button = document.createElement('button');
                         button.setAttribute("class", "messageThread");
                         button.setAttribute("type", "button");
@@ -342,7 +360,25 @@ function startReplyPolling() {
                 let author = document.createElement('author');
                 author.innerHTML = data.message[2];
                 let content = document.createElement('content');
-                content.innerHTML = decodeURIComponent(data.message[1]);
+                let text = decodeURIComponent(data.message[1]);
+                let url = getImageURLs(text);
+                if (url) {
+                    for (let i = 0; i < url.length; i++) {
+                        text = text.replace(url[i][0], "");
+                    }
+
+                    content.innerHTML = text;
+                    for (let i = 0; i < url.length; i++) {
+                        let p = document.createElement("p");
+                        let img = document.createElement("img");
+                        img.setAttribute("src", url[i][0]);
+                        p.appendChild(img);
+                        content.appendChild(p);
+                    }
+                } else {
+                    content.innerHTML = text;
+                }
+
                 let button = document.createElement('button');
                 button.setAttribute("class", "replyThread");
                 button.setAttribute("type", "button");
@@ -381,7 +417,24 @@ function startReplyPolling() {
                         let author = document.createElement('author');
                         author.innerHTML = replies[i][2];
                         let content = document.createElement('content');
-                        content.innerHTML = decodeURIComponent(replies[i][1]);
+                        let text = decodeURIComponent(replies[i][1]);
+                        let url = getImageURLs(text);
+                        if (url) {
+                            for (let i = 0; i < url.length; i++) {
+                                text = text.replace(url[i][0], "");
+                            }
+
+                            content.innerHTML = text;
+                            for (let i = 0; i < url.length; i++) {
+                                let p = document.createElement("p");
+                                let img = document.createElement("img");
+                                img.setAttribute("src", url[i][0]);
+                                p.appendChild(img);
+                                content.appendChild(p);
+                            }
+                        } else {
+                            content.innerHTML = text;
+                        }
 
                         message.appendChild(author);
                         message.appendChild(content);
@@ -405,6 +458,17 @@ function startReplyPolling() {
 
 
 /* For all */
+
+
+function getImageURLs(message) {
+    const regex = /https\:\/\/[a-zA-Z0-9.\-/]*\/[a-zA-Z_.\-]*.(jpeg|jpg|gif|png)+/g;
+    let array = [...message.matchAll(regex)];
+    if (array == null || array[0] == null) {
+        return null;
+    }
+
+    return array;
+}
 
 
 function checkAuthkey() {
