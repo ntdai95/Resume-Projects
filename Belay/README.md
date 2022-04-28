@@ -136,18 +136,18 @@ UI and Responsive Layout (8 points)
   parent message.
 - On narrow screens, one-column layout with menu bar. Users see the channel list,
   the messages in one channel, or the replies to one message at a time, and not
-  the other two.
+  the other two. (NOT DONE)
 - When viewing messages in a channel on a narrow screen, users have a button or
-  link they can click to navigate back to the channel list.
+  link they can click to navigate back to the channel list. (NOT DONE)
 - Parse image URLs that appear in messages and display the images at the end of
   the message. Hint: you may use the web to help you find an appropriate regular
-  expression.
-- Display the number of unread messages per channel
+  expression. (NOT DONE)
+- Display the number of unread messages per channel (NOT DONE)
 - For each message with replies, display the number of replies to that message.
 
 Single-Page State (5 points)
 - Only serve one HTML request
-- Push the channel name (for messages) or parent message id (for replies) to the
+- Push the channel id (for messages) or parent message id (for replies) to the
   history and navigation bar when the user navigates to a channel or thread.
 - Loading the unique URL of a channel or thread should open the app to that
   channel or thread.
