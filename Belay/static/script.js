@@ -381,7 +381,7 @@ function startReplyPolling() {
                         let author = document.createElement('author');
                         author.innerHTML = replies[i][2];
                         let content = document.createElement('content');
-                        content.innerHTML = replies[i][1];
+                        content.innerHTML = decodeURIComponent(replies[i][1]);
 
                         message.appendChild(author);
                         message.appendChild(content);
