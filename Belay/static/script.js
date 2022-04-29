@@ -245,17 +245,17 @@ function startMessagePolling() {
                         author.innerHTML = messages[i][2];
                         let content = document.createElement('content');
                         let text = decodeURIComponent(messages[i][1]);
-                        let url = getImageURLs(text);
-                        if (url) {
-                            for (let i = 0; i < url.length; i++) {
-                                text = text.replace(url[i][0], "");
+                        let urls = getImageURLs(text);
+                        if (urls) {
+                            for (let i = 0; i < urls.length; i++) {
+                                text = text.replace(urls[i][0], "");
                             }
 
                             content.innerHTML = text;
-                            for (let i = 0; i < url.length; i++) {
+                            for (let i = 0; i < urls.length; i++) {
                                 let p = document.createElement("p");
                                 let img = document.createElement("img");
-                                img.setAttribute("src", url[i][0]);
+                                img.setAttribute("src", urls[i][0]);
                                 p.appendChild(img);
                                 content.appendChild(p);
                             }
@@ -360,17 +360,17 @@ function startReplyPolling() {
                 author.innerHTML = data.message[2];
                 let content = document.createElement('content');
                 let text = decodeURIComponent(data.message[1]);
-                let url = getImageURLs(text);
-                if (url) {
-                    for (let i = 0; i < url.length; i++) {
-                        text = text.replace(url[i][0], "");
+                let urls = getImageURLs(text);
+                if (urls) {
+                    for (let i = 0; i < urls.length; i++) {
+                        text = text.replace(urls[i][0], "");
                     }
 
                     content.innerHTML = text;
-                    for (let i = 0; i < url.length; i++) {
+                    for (let i = 0; i < urls.length; i++) {
                         let p = document.createElement("p");
                         let img = document.createElement("img");
-                        img.setAttribute("src", url[i][0]);
+                        img.setAttribute("src", urls[i][0]);
                         p.appendChild(img);
                         content.appendChild(p);
                     }
@@ -417,17 +417,17 @@ function startReplyPolling() {
                         author.innerHTML = replies[i][2];
                         let content = document.createElement('content');
                         let text = decodeURIComponent(replies[i][1]);
-                        let url = getImageURLs(text);
-                        if (url) {
-                            for (let i = 0; i < url.length; i++) {
-                                text = text.replace(url[i][0], "");
+                        let urls = getImageURLs(text);
+                        if (urls) {
+                            for (let i = 0; i < urls.length; i++) {
+                                text = text.replace(urls[i][0], "");
                             }
 
                             content.innerHTML = text;
-                            for (let i = 0; i < url.length; i++) {
+                            for (let i = 0; i < urls.length; i++) {
                                 let p = document.createElement("p");
                                 let img = document.createElement("img");
-                                img.setAttribute("src", url[i][0]);
+                                img.setAttribute("src", urls[i][0]);
                                 p.appendChild(img);
                                 content.appendChild(p);
                             }
@@ -461,7 +461,7 @@ function startReplyPolling() {
 
 
 function getImageURLs(message) {
-    const regex = /https\:\/\/[a-zA-Z0-9.\-/]*\/[a-zA-Z_.\-]*.(jpeg|jpg|gif|png)+/g;
+    const regex = /(http(s?):)([/|.|\w|\s|-])*\.(?:jpeg|jpg|gif|png)+/g;
     let array = [...message.matchAll(regex)];
     if (array == null || array[0] == null) {
         return null;
