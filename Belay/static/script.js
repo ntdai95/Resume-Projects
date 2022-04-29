@@ -5,7 +5,7 @@ function signup() {
     let username = document.getElementById("usernamesignup").value;
     let password = document.getElementById("passwordsignup").value;
     let magiclink = localStorage.getItem("ntdai95_belay_magiclink");
-  
+
     fetch("http://127.0.0.1:5000/api/user", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -30,7 +30,7 @@ function signup() {
                 pushStateUnused = "Channels Page";
                 pushStateUrl = "http://127.0.0.1:5000/channel";
             }
-  
+
             checkState(true, pushStateState, pushStateUnused, pushStateUrl);
         } else {
             alert("Username has been used!");
@@ -39,7 +39,7 @@ function signup() {
     .catch(error => {
         console.error('Error:', error);
     });
-  
+
     document.getElementById("usernamesignup").value = "";
     document.getElementById("passwordsignup").value = "";
     document.getElementById("usernamelogin").value = "";
@@ -52,7 +52,7 @@ function login() {
     let username = document.getElementById("usernamelogin").value;
     let password = document.getElementById("passwordlogin").value;
     let magiclink = localStorage.getItem("ntdai95_belay_magiclink");
-  
+
     fetch("http://127.0.0.1:5000/api/user?username=" + username + "&password=" + password, {
         method: 'GET',
         headers: {'Content-Type': 'application/json'}
@@ -76,7 +76,7 @@ function login() {
                 pushStateUnused = "Channels Page";
                 pushStateUrl = "http://127.0.0.1:5000/channel";
             }
-  
+
             checkState(true, pushStateState, pushStateUnused, pushStateUrl);
         } else {
             alert("Wrong username and password combination!");
@@ -85,7 +85,7 @@ function login() {
     .catch(error => {
         console.error('Error:', error);
     });
-  
+
     document.getElementById("usernamesignup").value = "";
     document.getElementById("passwordsignup").value = "";
     document.getElementById("usernamelogin").value = "";
@@ -124,7 +124,7 @@ function getChannels() {
         method: 'GET',
         headers: {'Authorization': authkey, 'Content-Type': 'application/json'}
     })
-    
+
     return promise;
 }
 
@@ -215,7 +215,7 @@ function getMessages() {
         method: 'GET',
         headers: {'Authorization': authkey, 'Content-Type': 'application/json'}
     });
-    
+
     return promise;
 }
 
@@ -275,8 +275,7 @@ function startMessagePolling() {
                         message.appendChild(button);
                         div.appendChild(message);
                         messageContent.appendChild(div);
-                    } 
-                    else if (document.querySelector("#message" + messages[i][0] + " button").innerHTML != "Replies: " + messages[i][3]) {
+                    } else if (document.querySelector("#message" + messages[i][0] + " button").innerHTML != "Replies: " + messages[i][3]) {
                         document.querySelector("#message" + messages[i][0] + " button").innerHTML = "Replies: " + messages[i][3];
                     }
                 }
@@ -453,6 +452,7 @@ function startReplyPolling() {
     .catch(error => {
         console.error('Error:', error);
     });
+
     return;
 }
 
@@ -478,8 +478,7 @@ function checkAuthkey() {
     let pushStateState = {"authkey": authkey, "username": username};
     if (paths.length == 3) {
         pushStateState["channel_id"] = paths[2];
-    } 
-    else if (paths.length == 5) {
+    } else if (paths.length == 5) {
         pushStateState["channel_id"] = paths[2];
         pushStateState["message_id"] = paths[4];
     }
@@ -513,8 +512,7 @@ function checkState(pushHistory=false, pushStateState=null, pushStateUnused=null
         document.querySelector('.thread').style.display = 'block';
         startChannelPolling();
         startReplyPolling();
-    }
-    else if (window.location.pathname.startsWith('/channel/')) {
+    } else if (window.location.pathname.startsWith('/channel/')) {
         document.querySelector('.auth').style.display = 'none';
         document.querySelector('.channelColumn').style.display = 'block';
         document.querySelector('.messageThreadColumn').style.display = 'block';
@@ -522,14 +520,12 @@ function checkState(pushHistory=false, pushStateState=null, pushStateUnused=null
         document.querySelector('.thread').style.display = 'none';
         startChannelPolling();
         startMessagePolling();
-    }
-    else if (window.location.pathname.startsWith('/channel')) {
+    } else if (window.location.pathname.startsWith('/channel')) {
         document.querySelector('.auth').style.display = 'none';
         document.querySelector('.channelColumn').style.display = 'block';
         document.querySelector('.messageThreadColumn').style.display = 'none';
         startChannelPolling();
-    }
-    else {
+    } else {
         document.querySelector('.auth').style.display = 'grid';
         document.querySelector('.channelColumn').style.display = 'none';
         document.querySelector('.messageThreadColumn').style.display = 'none';
