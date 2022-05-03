@@ -312,12 +312,8 @@ function startMessagePolling() {
     .then(data => {
         if (data.success == true) {
             let messageContent = document.querySelector(".messageContent");
-            if (document.querySelector("#channelID" + history.state["channel_id"]) == null) {
-                messageContent.innerHTML = "";
-            }
-
             let messages = data.messages;
-            if (messageContent.length != messages.length) {
+            if (document.querySelector("#channelID" + history.state["channel_id"]) == null || messageContent.length != messages.length) {
                 messageContent.innerHTML = "";
             }
 
