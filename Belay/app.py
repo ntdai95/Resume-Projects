@@ -16,7 +16,8 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 class Database:
     def __init__(self, db_name):
         self.db_name = db_name
-    
+
+
     def create_user(self, username, hashed_password):
         connection = connect(path.join(path.join(path.dirname(__file__), "database"), f"{self.db_name}.db"), check_same_thread=False)
         cursor = connection.cursor()
@@ -38,7 +39,7 @@ class Database:
                 authkey = str(uuid4())
                 if authkey not in used_authkeys:
                     break
-            
+
             sql_query = f'INSERT INTO user (authkey, username, hashed_password) VALUES (?, ?, ?);'
             cursor.execute(sql_query, (authkey, username, hashed_password))
             connection.commit()
@@ -57,7 +58,7 @@ class Database:
 
             if checkpw(password, user[3]):
                 return {'success': True, "authkey": user[1]}
-            
+
             return {'success': False}
 
 
@@ -70,7 +71,7 @@ class Database:
             user = cursor.fetchone()
             if not user:
                 return {'success': False}
-            
+
             sql_query = f'INSERT INTO channel (name) VALUES (?);'
             cursor.execute(sql_query, (channelName,))
             connection.commit()
@@ -86,7 +87,7 @@ class Database:
             user = cursor.fetchone()
             if not user:
                 return {'success': False}
-            
+
             sql_query = "SELECT * FROM channel;"
             cursor.execute(sql_query)
             channels = cursor.fetchall()
@@ -102,7 +103,7 @@ class Database:
             user = cursor.fetchone()
             if not user:
                 return {'success': False}
-            
+
             sql_query = f'INSERT INTO message (content, username, channel_id, is_reply, replies_to) VALUES (?, ?, ?, ?, ?);'
             cursor.execute(sql_query, (newMessage, username, channel_id, False, None))
             connection.commit()
@@ -118,7 +119,7 @@ class Database:
             user = cursor.fetchone()
             if not user:
                 return {'success': False}
-            
+
             sql_query = f"SELECT * FROM message WHERE channel_id = '{channel_id}' AND is_reply = 0;"
             cursor.execute(sql_query)
             result = cursor.fetchall()
@@ -129,7 +130,7 @@ class Database:
                 result = cursor.fetchall()
                 number_of_replies = len(result)
                 messages.append([message[0], message[1], message[2], number_of_replies, message[3]])
-            
+
             return {'success': True, 'messages': messages}
 
 
@@ -169,8 +170,65 @@ class Database:
             replies = []
             for reply in result:
                 replies.append([reply[0], reply[1], reply[2]])
-            
-            return {'success': True, 'message': message, 'replies': replies}            
+
+            return {'success': True, 'message': message, 'replies': replies}
+
+
+    def update_last_seen_message(self, authkey, username, channel_id, message_id):
+        connection = connect(path.join(path.join(path.dirname(__file__), "database"), f"{self.db_name}.db"), check_same_thread=False)
+        cursor = connection.cursor()
+        with connection:
+            sql_query = f"SELECT * FROM user WHERE authkey = '{authkey}';"
+            cursor.execute(sql_query)
+            user = cursor.fetchone()
+            if not user:
+                return {'success': False}
+
+            sql_query = f"SELECT * FROM user_channel WHERE username = '{username}' AND channel_id = '{channel_id}' AND latest_seen_message_id = '{message_id}';"
+            cursor.execute(sql_query)
+            user_channel = cursor.fetchone()
+            if not user_channel:
+                sql_query = f'INSERT INTO user_channel (username, channel_id, latest_seen_message_id) VALUES (?, ?, ?);'
+                cursor.execute(sql_query, (username, channel_id, message_id))
+            else:
+                sql_query = f"UPDATE user_channel SET latest_seen_message_id = '{message_id}' WHERE username = '{username}' AND channel_id = '{channel_id}';"
+                cursor.execute(sql_query)
+
+            connection.commit()
+            return {'success': True}
+
+
+    def get_all_unread_message_counts(self, authkey, username):
+        connection = connect(path.join(path.join(path.dirname(__file__), "database"), f"{self.db_name}.db"), check_same_thread=False)
+        cursor = connection.cursor()
+        with connection:
+            sql_query = f"SELECT * FROM user WHERE authkey = '{authkey}';"
+            cursor.execute(sql_query)
+            user = cursor.fetchone()
+            if not user:
+                return {'success': False}
+
+            sql_query = f"SELECT * FROM channel ORDER BY channel_id ASC;"
+            cursor.execute(sql_query)
+            channels = cursor.fetchall()
+            if channels == []:
+                return {'success': True, 'channel_idCounts': []}
+
+            channel_idCounts = []
+            for channel in channels:
+                sql_query = f"SELECT * FROM user_channel WHERE username = '{username}' AND channel_id = '{channel[0]}';"
+                cursor.execute(sql_query)
+                user_channel = cursor.fetchone()
+                if not user_channel:
+                    sql_query = f"SELECT * FROM message WHERE channel_id = '{channel[0]}' AND is_reply = 0;"
+                else:
+                    sql_query = f"SELECT * FROM message WHERE message_id > '{user_channel[2]}' AND channel_id = '{channel[0]}' AND is_reply = 0;"
+
+                cursor.execute(sql_query)
+                new_messages = cursor.fetchall()
+                channel_idCounts.append(tuple([channel[0], len(new_messages)]))
+
+            return {'success': True, 'channel_idCounts': channel_idCounts}
 
 
 DB = Database("belay")
@@ -260,24 +318,25 @@ def reply(channel_id, message_id):
         return jsonify(result)
 
 
-@app.route('/api/message/unreadCount/<int:user_id>', methods=['GET'])
-def get_unread_message_count(user_id):
+@app.route('/api/message/unread', methods=['GET', 'POST'])
+def unread_message_counts():
     if "Authorization" not in list(request.headers.keys()):
         return jsonify({"success": False})
     else:
         authkey = request.headers["Authorization"]
-        
-    return jsonify({})
 
+    if request.method == 'GET':
+        username = request.args.get('username')
 
-@app.route('/api/message/lastRead/<int:user_id>', methods=['POST'])
-def update_last_read_message(user_id):
-    if "Authorization" not in list(request.headers.keys()):
-        return jsonify({"success": False})
-    else:
-        authkey = request.headers["Authorization"]
-        
-    return jsonify({})
+        result = DB.get_all_unread_message_counts(authkey, username)
+        return jsonify(result)
+    elif request.method == 'POST':
+        username = loads(request.data)['username']
+        channel_id = loads(request.data)['channel_id']
+        message_id = loads(request.data)['message_id']
+
+        result = DB.update_last_seen_message(authkey, username, channel_id, message_id)
+        return jsonify(result)
 
 
 if __name__ == "__main__":

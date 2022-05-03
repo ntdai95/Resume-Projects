@@ -138,7 +138,3 @@ button {
     font-family: 'Rowdies', cursive;
     margin-bottom: 10px;
 }
-
-@media (max-width: 600px) and (orientation: landscape) {
-
-}

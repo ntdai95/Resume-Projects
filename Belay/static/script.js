@@ -130,9 +130,9 @@ function getChannels() {
 
 
 function startChannelPolling() {
-    let promise = getChannels();
+    let promiseChannels = getChannels();
 
-    promise
+    promiseChannels
     .then(response => response.json())
     .then(data => {
         if (data.success == true) {
@@ -144,6 +144,7 @@ function startChannelPolling() {
                 for (let i = 0; i < channels.length; i++) {
                     if (document.querySelector("#channel" + channels[i][0]) == null) {
                         let tr = document.createElement('tr');
+                        tr.setAttribute("id", "rowChannel_id" + channels[i][0]);
                         let td = document.createElement('td');
                         let button = document.createElement('button');
                         button.setAttribute("type", "button");
@@ -163,12 +164,72 @@ function startChannelPolling() {
         }
 
         if (window.location.pathname.startsWith('/channel')) {
+            startCountPolling();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
+    return;
+}
+
+
+function getUnreadMessageCounts() {
+    let authkey = localStorage.getItem("ntdai95_belay_authkey");
+    let username = localStorage.getItem('ntdai95_belay_username');
+    let promise = fetch("http://127.0.0.1:5000/api/message/unread?username=" + username, {
+        method: 'GET',
+        headers: {'Authorization': authkey, 'Content-Type': 'application/json'}
+    })
+
+    return promise;
+}
+
+
+function startCountPolling() {
+    let promiseCounts = getUnreadMessageCounts();
+
+    promiseCounts
+    .then(response => response.json())
+    .then(data => {
+        if (data.success == true) {
+            let channel_idCounts = data.channel_idCounts;
+            if (channel_idCounts.length > 0) {
+                for (let i = 0; i < channel_idCounts.length; i++) {
+                    if (document.querySelector("#unreadMessageCount" + channel_idCounts[i][0]) == null) {
+                        let tr = document.querySelector("#rowChannel_id" + channel_idCounts[i][0]);
+                        if (tr != null) {
+                            let td = document.createElement('td');
+                            td.setAttribute("id", "unreadMessageCount" + channel_idCounts[i][0]);
+                            let p = document.createElement('p');
+                            p.innerHTML = channel_idCounts[i][1] + " new message(s)";
+
+                            td.appendChild(p);
+                            tr.appendChild(td);
+                        }
+                    } else {
+                        let td = document.querySelector("#unreadMessageCount" + channel_idCounts[i][0]);
+                        td.innerHTML = "";
+                        let p = document.createElement('p');
+                        p.innerHTML = channel_idCounts[i][1] + " new message(s)";
+
+                        td.appendChild(p);
+                    }
+                }
+            }
+        } else {
+            alert("You don't have a valid authentication key!");
+        }
+
+        if (window.location.pathname.startsWith('/channel')) {
             startChannelPolling();
         }
     })
     .catch(error => {
         console.error('Error:', error);
     });
+
     return;
 }
 
@@ -205,6 +266,29 @@ function postMessage() {
     });
 
     document.getElementById("newMessage").value = "";
+    return;
+}
+
+
+function updateUnreadMessageCounts(channel_id, message_id) {
+    let authkey = localStorage.getItem("ntdai95_belay_authkey");
+    let username = localStorage.getItem('ntdai95_belay_username');
+
+    fetch("http://127.0.0.1:5000/api/message/unread", {
+        method: 'POST',
+        headers: {'Authorization': authkey, 'Content-Type': 'application/json'},
+        body: JSON.stringify({username: username, channel_id: channel_id, message_id: message_id})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success == false) {
+            alert("You don't have a valid authentication key!");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
     return;
 }
 
@@ -279,6 +363,8 @@ function startMessagePolling() {
                         document.querySelector("#message" + messages[i][0] + " button").innerHTML = "Replies: " + messages[i][3];
                     }
                 }
+
+                updateUnreadMessageCounts(messages[messages.length - 1][4], messages[messages.length - 1][0]);
             }
         } else {
             alert("You don't have a valid authentication key!");
@@ -291,6 +377,7 @@ function startMessagePolling() {
     .catch(error => {
         console.error('Error:', error);
     });
+
     return;
 }
 

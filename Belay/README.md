@@ -142,7 +142,7 @@ UI and Responsive Layout (8 points)
 - Parse image URLs that appear in messages and display the images at the end of
   the message. Hint: you may use the web to help you find an appropriate regular
   expression.
-- Display the number of unread messages per channel (NOT DONE)
+- Display the number of unread messages per channel
 - For each message with replies, display the number of replies to that message.
 
 Single-Page State (5 points)

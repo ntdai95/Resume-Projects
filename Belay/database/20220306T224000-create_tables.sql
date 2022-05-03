@@ -1,7 +1,7 @@
-CREATE TABLE IF NOT EXISTS channel (
-    channel_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name VARCHAR(100) NOT NULL
-);
+DROP TABLE IF EXISTS user_channel;
+DROP TABLE IF EXISTS message;
+DROP TABLE IF EXISTS channel;
+DROP TABLE IF EXISTS user;
 
 
 CREATE TABLE IF NOT EXISTS user (
@@ -9,6 +9,12 @@ CREATE TABLE IF NOT EXISTS user (
     authkey VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL,
     hashed_password BLOB NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS channel (
+    channel_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name VARCHAR(100) NOT NULL
 );
 
 
@@ -25,10 +31,10 @@ CREATE TABLE IF NOT EXISTS message (
 
 
 CREATE TABLE IF NOT EXISTS user_channel (
-    user_id INTEGER NOT NULL,
+    username VARCHAR(100) NOT NULL,
     channel_id INTEGER NOT NULL,
-    latest_message_id INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    latest_seen_message_id INTEGER NOT NULL,
+    FOREIGN KEY (username) REFERENCES user(username),
     FOREIGN KEY (channel_id) REFERENCES channel(channel_id),
-    FOREIGN KEY (latest_message_id) REFERENCES message(message_id)
+    FOREIGN KEY (latest_seen_message_id) REFERENCES message(message_id)
 );
