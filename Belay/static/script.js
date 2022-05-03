@@ -317,6 +317,10 @@ function startMessagePolling() {
             }
 
             let messages = data.messages;
+            if (messageContent.length != messages.length) {
+                messageContent.innerHTML = "";
+            }
+
             if (messages.length > 0) {
                 for (let i = 0; i < messages.length; i++) {
                     if (document.querySelector("#message" + messages[i][0]) == null) {
