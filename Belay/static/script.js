@@ -44,6 +44,7 @@ function signup() {
     document.getElementById("passwordsignup").value = "";
     document.getElementById("usernamelogin").value = "";
     document.getElementById("passwordlogin").value = "";
+
     return;
 }
 
@@ -62,12 +63,13 @@ function login() {
         if (data.success == true) {
             localStorage.setItem('ntdai95_belay_authkey', data.authkey);
             localStorage.setItem('ntdai95_belay_username', username);
-
             history.state["authkey"] = data.authkey;
             history.state["username"] = username;
+
             let pushStateState = history.state;
             let pushStateUnused = null;
             let pushStateUrl = null;
+
             if (magiclink !== null && magiclink !== "null") {
                 pushStateUnused = "User Entered Page";
                 pushStateUrl = magiclink;
@@ -90,6 +92,7 @@ function login() {
     document.getElementById("passwordsignup").value = "";
     document.getElementById("usernamelogin").value = "";
     document.getElementById("passwordlogin").value = "";
+
     return;
 }
 
@@ -114,6 +117,7 @@ function createChannel() {
     });
 
     document.getElementById("newChannelName").value = "";
+
     return;
 }
 
@@ -195,10 +199,12 @@ function startCountPolling() {
     .then(data => {
         if (data.success == true) {
             let channel_idCounts = data.channel_idCounts;
+
             if (channel_idCounts.length > 0) {
                 for (let i = 0; i < channel_idCounts.length; i++) {
                     if (document.querySelector("#unreadMessageCount" + channel_idCounts[i][0]) == null) {
                         let tr = document.querySelector("#rowChannel_id" + channel_idCounts[i][0]);
+
                         if (tr != null) {
                             let td = document.createElement('td');
                             td.setAttribute("id", "unreadMessageCount" + channel_idCounts[i][0]);
@@ -241,6 +247,7 @@ function goToChannel(channel_id) {
     let pushStateUrl = "http://127.0.0.1:5000/channel/" + channel_id;
 
     checkState(true, pushStateState, pushStateUnused, pushStateUrl);
+
     return;
 }
 
@@ -266,6 +273,7 @@ function postMessage() {
     });
 
     document.getElementById("newMessage").value = "";
+
     return;
 }
 
@@ -313,6 +321,7 @@ function startMessagePolling() {
         if (data.success == true) {
             let messageContent = document.querySelector(".messageContent");
             let messages = data.messages;
+
             if (document.querySelector("#channelID" + history.state["channel_id"]) == null || messageContent.length != messages.length) {
                 messageContent.innerHTML = "";
             }
@@ -330,12 +339,14 @@ function startMessagePolling() {
                         let content = document.createElement('content');
                         let text = decodeURIComponent(messages[i][1]);
                         let urls = getImageURLs(text);
+
                         if (urls) {
                             for (let i = 0; i < urls.length; i++) {
                                 text = text.replace(urls[i][0], "");
                             }
 
                             content.innerHTML = text;
+
                             for (let i = 0; i < urls.length; i++) {
                                 let p = document.createElement("p");
                                 let img = document.createElement("img");
@@ -389,6 +400,7 @@ function goToThread(message_id) {
     let pushStateUrl = "http://127.0.0.1:5000/channel/" + history.state['channel_id'] + "/thread/" + message_id;
 
     checkState(true, pushStateState, pushStateUnused, pushStateUrl);
+
     return;
 }
 
@@ -414,6 +426,7 @@ function replyMessage() {
     });
 
     document.getElementById("newReply").value = "";
+
     return;
 }
 
@@ -437,9 +450,11 @@ function startReplyPolling() {
     .then(data => {
         if (data.success == true) {
             let threadContentPost = document.querySelector(".threadContent .post");
+
             if (threadContentPost.getAttribute("id") != data.message[0]) {
                 threadContentPost.setAttribute("id", "");
                 threadContentPost.innerHTML = "";
+
                 let h3Message = document.createElement('h3');
                 h3Message.innerHTML = "Message:";
                 let message = document.createElement('message');
@@ -448,12 +463,14 @@ function startReplyPolling() {
                 let content = document.createElement('content');
                 let text = decodeURIComponent(data.message[1]);
                 let urls = getImageURLs(text);
+
                 if (urls) {
                     for (let i = 0; i < urls.length; i++) {
                         text = text.replace(urls[i][0], "");
                     }
 
                     content.innerHTML = text;
+
                     for (let i = 0; i < urls.length; i++) {
                         let p = document.createElement("p");
                         let img = document.createElement("img");
@@ -495,6 +512,7 @@ function startReplyPolling() {
             let messageReply = document.querySelector(".threadContent .post .messageReply");
             messageReply.innerHTML = "";
             let replies = data.replies;
+
             if (replies.length > 0) {
                 for (let i = 0; i < replies.length; i++) {
                     if (document.querySelector(".threadContent .post .messageReply #reply_id" + replies[i][0]) == null) {
@@ -505,12 +523,14 @@ function startReplyPolling() {
                         let content = document.createElement('content');
                         let text = decodeURIComponent(replies[i][1]);
                         let urls = getImageURLs(text);
+
                         if (urls) {
                             for (let i = 0; i < urls.length; i++) {
                                 text = text.replace(urls[i][0], "");
                             }
 
                             content.innerHTML = text;
+
                             for (let i = 0; i < urls.length; i++) {
                                 let p = document.createElement("p");
                                 let img = document.createElement("img");
@@ -550,6 +570,7 @@ function startReplyPolling() {
 function getImageURLs(message) {
     const regex = /(http(s?):)([/|.|\w|\s|-])*\.(?:jpeg|jpg|gif|png)+/g;
     let array = [...message.matchAll(regex)];
+
     if (array == null || array[0] == null) {
         return null;
     }
@@ -563,6 +584,7 @@ function checkAuthkey() {
     let username = localStorage.getItem('ntdai95_belay_username');
     let paths = window.location.pathname.split('/');
     let pushStateState = {"authkey": authkey, "username": username};
+
     if (paths.length == 3) {
         pushStateState["channel_id"] = paths[2];
     } else if (paths.length == 5) {
@@ -572,6 +594,7 @@ function checkAuthkey() {
 
     let pushStateUnused = "";
     let pushStateUrl = "";
+
     if (authkey === null || authkey === "null") {
         localStorage.setItem("ntdai95_belay_magiclink", document.URL);
         pushStateUnused = "Login/Signup Page";
@@ -582,6 +605,7 @@ function checkAuthkey() {
     }
 
     checkState(true, pushStateState, pushStateUnused, pushStateUrl);
+
     return;
 }
 
