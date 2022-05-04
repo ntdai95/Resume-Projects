@@ -1,5 +1,8 @@
 ***Note: You need to create a .env file with EMAIL_ADDRESS=<app_email_address_as_string> and EMAIL_PASSWORD=<app_email_password_as_string> environment variables.***
 
+# Install Requirements:
+Type the following command to installed the required python modules: pip3 install -r requirements.txt
+
 # How To Run The Program Remotely
 
 The reservation server is currently running on the U Chicago Linux server #5. To use the reservation client, all you need to do is run the client program locally with the following command:\
