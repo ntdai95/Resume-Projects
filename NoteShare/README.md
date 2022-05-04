@@ -3,10 +3,10 @@
 # How to run the program:
 
 Install Requirements:
-1. Type the following command to install the required python modules: pip3 install -r requirements.txt
+1. Type the following command to install the required python modules: "pip3 install -r requirements.txt"
 
 Run App:
-1. Type the following command to start the server: python server.py
+1. Type the following command to start the server: "python server.py"
 2. Put all your files that you want to send in the current directory
-3. Type the following command to start the client: python main.py
+3. Type the following command to start the client: "python main.py"
 4. All the files that you have downloaded will be stored in the current directory
