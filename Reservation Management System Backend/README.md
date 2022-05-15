@@ -1,7 +1,7 @@
 ***Note: You need to create a .env file with EMAIL_ADDRESS=<app_email_address_as_string> and EMAIL_PASSWORD=<app_email_password_as_string> environment variables.***
 
 # Install Requirements:
-Type the following command to install the required python modules: "pip3 install -r requirements.txt"
+Type the following command to install the required python modules: "pip install -r requirements.txt"
 
 # How To Run The Program Remotely
 
