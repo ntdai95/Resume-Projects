@@ -1,0 +1,10 @@
+{"inPath": "IMG_2029.png", "outPath": "IMG_2029_Out.png", "effects": ["G","E","S"]}
+{"inPath": "IMG_2724.png", "outPath": "IMG_2724_Out.png", "effects": ["B","G"]}
+{"inPath": "IMG_3695.png", "outPath": "IMG_3695_Out.png", "effects": ["S"]}
+{"inPath": "IMG_3696.png", "outPath": "IMG_3696_Out.png", "effects": ["G","E"]}
+{"inPath": "IMG_3996.png", "outPath": "IMG_3996_Out.png", "effects": ["S","G","B","E"]}
+{"inPath": "IMG_4061.png", "outPath": "IMG_4061_Out.png", "effects": ["B","E"]}
+{"inPath": "IMG_4065.png", "outPath": "IMG_4065_Out.png", "effects": ["B","S"]}
+{"inPath": "IMG_4066.png", "outPath": "IMG_4066_Out.png", "effects": ["E"]}
+{"inPath": "IMG_4067.png", "outPath": "IMG_4067_Out.png", "effects": ["B","S","E"]}
+{"inPath": "IMG_4069.png", "outPath": "IMG_4069_Out.png", "effects": ["G","S","E"]}
