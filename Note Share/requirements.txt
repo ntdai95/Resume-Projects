@@ -1,7 +1,0 @@
-# Usage: pip3 install -r requirements.txt
-
-python-dotenv
-pygame
-Pillow
-gTTS
-pytz
