@@ -38,17 +38,15 @@ Creates:
 
 ---
 
-### Step 3: (Optional) Build Graph Features (Neo4j)
+### Step 3: Build Graph Features (Neo4j)
 
 Extract influencer-level graph features if Neo4j is running and populated.
 
 python -m src.features.graph_features
 
-Creates (optional):
+Creates:
 
 - data/processed/influencer_graph_features.parquet
-
-If Neo4j is unavailable, this step can be skipped safely.
 
 ---
 
