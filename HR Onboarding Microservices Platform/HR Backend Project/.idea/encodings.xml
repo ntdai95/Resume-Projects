@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/AuthService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/AuthService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/ApplicationService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/ApplicationService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/EmailService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/EmailService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/EmployeeService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/EmployeeService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/Eureka/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/Eureka/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/GatewayService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/GatewayService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/HousingService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroService/HousingService/src/main/resources" charset="UTF-8" />
+  </component>
+</project>

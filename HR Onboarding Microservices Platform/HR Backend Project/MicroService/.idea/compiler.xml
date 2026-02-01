@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="HousingService" />
+        <module name="UserService" />
+        <module name="HR" />
+        <module name="EmailService" />
+        <module name="Eureka" />
+        <module name="Onboard" />
+        <module name="EmployeeService" />
+        <module name="GatewayService" />
+        <module name="ApplicationService" />
+        <module name="StorageService" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="MicroService" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ApplicationService" options="-parameters" />
+      <module name="EmailService" options="-parameters" />
+      <module name="EmployeeService" options="-parameters" />
+      <module name="Eureka" options="-parameters" />
+      <module name="GatewayService" options="-parameters" />
+      <module name="HR" options="-parameters" />
+      <module name="HousingService" options="-parameters" />
+      <module name="Onboard" options="-parameters" />
+      <module name="StorageService" options="-parameters" />
+      <module name="UserService" options="-parameters" />
+    </option>
+  </component>
+</project>

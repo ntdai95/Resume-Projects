@@ -1,0 +1,49 @@
+-- CREATING DATABASE
+
+CREATE DATABASE IF NOT EXISTS Authentication;
+USE Authentication;
+
+-- CREATING TABLES
+
+DROP TABLE IF EXISTS RegistrationToken;
+DROP TABLE IF EXISTS UserRole;
+DROP TABLE IF EXISTS Role;
+DROP TABLE IF EXISTS User;
+
+CREATE TABLE IF NOT EXISTS User (
+	ID INT AUTO_INCREMENT PRIMARY KEY,
+    Username VARCHAR(50),
+    Email VARCHAR(50),
+    Password VARCHAR(50),
+    CreateDate DATE,
+    LastModificationDate DATE,
+    ActiveFlag BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS Role (
+	ID INT AUTO_INCREMENT PRIMARY KEY,
+    RoleName VARCHAR(50),
+    RoleDescription VARCHAR(100),
+    CreateDate DATE,
+    LastModificationDate DATE
+);
+
+CREATE TABLE IF NOT EXISTS UserRole (
+	ID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID INT,
+    RoleID INT,
+    ActiveFlag BOOLEAN,
+    CreateDate DATE,
+    LastModificationDate DATE,
+    FOREIGN KEY (UserID) REFERENCES User(ID),
+    FOREIGN KEY (RoleID) REFERENCES Role(ID)
+);
+
+CREATE TABLE IF NOT EXISTS RegistrationToken (
+	ID INT AUTO_INCREMENT PRIMARY KEY,
+    Token VARCHAR(100),
+    Email VARCHAR(50),
+    ExpirationDate DATE,
+    CreateBY INT,
+    FOREIGN KEY (CreateBY) REFERENCES User(ID)
+);

@@ -1,0 +1,312 @@
+{
+	"info": {
+		"_postman_id": "6de4b182-cc62-49da-b6eb-91ff6b318cf0",
+		"name": "HousingService",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21883167"
+	},
+	"item": [
+		{
+			"name": "Create House",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"LandlordID\": 1,\r\n    \"Address\": \"4636 Night Rd\",\r\n    \"MaxOccupant\": 3\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8003/house",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"house"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find House By ID",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8003/house/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"house",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find All Houses",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/house",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"house"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete House By ID",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/house/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"house",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Facility Report",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"FacilityID\": 1,\r\n    \"EmployeeID\": 1,\r\n    \"Title\": \"Dirty Bed Sheet\",\r\n    \"Description\": \"There is dirt on the bed sheet.\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8003/facilityReport",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReport"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find All Facility Reports By Facility ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facilityReport/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReport",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find All Facility Reports",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facilityReport",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReport"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Facility Report Detail",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"FacilityReportID\": 1,\r\n    \"EmployeeID\": 1,\r\n    \"Comment\": \"Working on it.\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8003/facilityReportDetail",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReportDetail"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Facility Report Detail",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facilityReportDetail/1?employeeID=1&newComment=Issue%20Solved",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReportDetail",
+						"1"
+					],
+					"query": [
+						{
+							"key": "employeeID",
+							"value": "1"
+						},
+						{
+							"key": "newComment",
+							"value": "Issue%20Solved"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Facility Report",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facilityReport/1?status=Closed",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReport",
+						"1"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "Closed"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find All Facility Report Details By Facility Report ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facilityReportDetail/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facilityReportDetail",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find All Facilities By House ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8003/facility/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8003",
+					"path": [
+						"facility",
+						"1"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
