@@ -41,6 +41,8 @@ STOCKS = [
 ]
 
 STOCK_KEYWORDS = {symbol: {symbol.lower(), company.lower()} for symbol, company in STOCKS}
+
+
 def x_headers():
     if not X_BEARER_TOKEN:
         raise RuntimeError("Missing X_BEARER_TOKEN. Set it in the .env file.")
@@ -193,17 +195,14 @@ class Neo4jClient:
             auth=(NEO4J_USER, NEO4J_PASSWORD)
         )
 
-
     def close(self):
         self.driver.close()
-
 
     def init_constraints(self):
         with self.driver.session(database="stock-influencer-tweets-neo4j") as s:
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE")
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (t:Tweet) REQUIRE t.id IS UNIQUE")
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (s:Stock) REQUIRE s.symbol IS UNIQUE")
-
 
     def insert_stock_relations(self, tweet, user_id, user_username, user_name, stocks):
         metrics = tweet.get("public_metrics", {})
