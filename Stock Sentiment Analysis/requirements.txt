@@ -1,0 +1,12 @@
+pandas
+numpy
+python-dotenv
+yfinance
+statsmodels
+arch
+torch
+transformers
+sentencepiece
+neo4j
+requests
+matplotlib
