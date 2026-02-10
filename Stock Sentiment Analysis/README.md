@@ -211,5 +211,5 @@ Running `main.py` executes the end-to-end analysis pipeline.
 
 Full methodology and results are documented here:
 
-- 📘 [Project Report](report/Stock Sentiment Report.pdf)
-- 📊 [Presentation Slides](report/Stock Sentiment Presentation.pdf)
+- 📘 [Project Report](report/Stock_Sentiment_Report.pdf)
+- 📊 [Presentation Slides](report/Stock_Sentiment_Presentation.pdf)
