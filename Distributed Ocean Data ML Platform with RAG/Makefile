@@ -41,7 +41,7 @@ services:
 all: manifest harmonize features train evaluate hyperparameters index benchmark
 
 api:
-	uvicorn app.main:app --reload
+	uvicorn app.main:app
 
 test:
 	python -m pytest -q
