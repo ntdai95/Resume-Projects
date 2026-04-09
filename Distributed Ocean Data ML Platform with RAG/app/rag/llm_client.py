@@ -5,7 +5,7 @@ import requests
 class LLMClient:
     def __init__(self):
         self.provider = os.getenv("LLM_PROVIDER", "ollama")
-        self.model = os.getenv("LLM_MODEL", "mistral")
+        self.model = os.getenv("LLM_MODEL", "llama3")
         self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         if self.provider != "ollama":
             raise ValueError(

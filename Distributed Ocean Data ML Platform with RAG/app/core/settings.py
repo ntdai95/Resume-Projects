@@ -27,7 +27,7 @@ class Settings:
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
     qdrant_collection = os.getenv("QDRANT_COLLECTION", "ocean_metadata")
     llm_provider = os.getenv("LLM_PROVIDER", "ollama")
-    llm_model = os.getenv("LLM_MODEL", "mistral")
+    llm_model = os.getenv("LLM_MODEL", "llama3")
     ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "./artifacts/mlruns")
     mlflow_experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "ocean_forecasting_spark")
