@@ -1,0 +1,23 @@
+﻿# Data
+data/
+*.csv
+*.db
+
+# Models
+*.pkl
+*.pt
+
+# Env
+.venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
