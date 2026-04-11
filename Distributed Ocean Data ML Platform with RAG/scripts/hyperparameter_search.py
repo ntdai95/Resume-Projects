@@ -18,18 +18,17 @@ def load_config(config_path="configs/model_config.yaml"):
 def prepare_data(parquet_path, config_path="configs/model_config.yaml"):
     cfg = load_config(config_path)
     df = pd.read_parquet(parquet_path)
+    if "time_ts" in df.columns:
+        df["time_ts"] = pd.to_datetime(df["time_ts"], errors="coerce")
+        sort_cols = ["time_ts"]
+        if "dataset_id" in df.columns:
+            sort_cols = ["dataset_id", "time_ts"]
+
+        df = df.sort_values(sort_cols).reset_index(drop=True)
+
     target = cfg["forecasting"]["target_variable"]
-    drop_cols = [
-        target,
-        "source_variable",
-        "canonical_variable",
-        "units",
-        "normalized_unit",
-        "source_file",
-        "dataset_id",
-        "provenance_transform",
-        "time_ts",
-    ]
+    drop_cols = [target, "source_variable", "canonical_variable", "units", "normalized_unit", "source_file", "dataset_id",
+                 "provenance_transform", "time_ts"]
 
     feature_cols = [c for c in df.columns if c not in drop_cols]
     X = df[feature_cols]
@@ -70,43 +69,22 @@ def main():
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     mlflow.set_experiment(settings.mlflow_experiment_name)
     with mlflow.start_run(run_name="xgboost_hyperparameter_search"):
+        mlflow.log_param("split_strategy", "chronological_holdout")
         study = optuna.create_study(direction="minimize")
-        study.optimize(
-            lambda trial: objective(trial, X_train, X_test, y_train, y_test),
-            n_trials=25,
-        )
+        study.optimize(lambda trial: objective(trial, X_train, X_test, y_train, y_test), n_trials=25)
 
-        best_params = study.best_params | {
-            "random_state": 42,
-            "objective": "reg:squarederror",
-            "n_jobs": -1,
-        }
-
+        best_params = study.best_params | {"random_state": 42, "objective": "reg:squarederror", "n_jobs": -1}
         best_model = XGBRegressor(**best_params)
         best_model.fit(X_train, y_train)
         preds = best_model.predict(X_test)
-        metrics = {
-            "mae": float(mean_absolute_error(y_test, preds)),
-            "rmse": float(root_mean_squared_error(y_test, preds)),
-            "r2": float(r2_score(y_test, preds)),
-        }
+        metrics = {"mae": float(mean_absolute_error(y_test, preds)), "rmse": float(root_mean_squared_error(y_test, preds)),
+                   "r2": float(r2_score(y_test, preds))}
 
-        model_package = {
-            "model": best_model,
-            "features": feature_cols,
-            "best_params": best_params,
-            "metrics": metrics,
-        }
-
+        model_package = {"model": best_model, "features": feature_cols, "best_params": best_params, "metrics": metrics}
         Path(model_out).parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(model_package, model_out)
-        payload = {
-            "best_params": best_params,
-            "metrics": metrics,
-            "best_value": study.best_value,
-            "n_trials": len(study.trials),
-            "model_path": str(model_out),
-        }
+        payload = {"best_params": best_params, "metrics": metrics, "best_value": study.best_value, "n_trials": len(study.trials),
+                   "model_path": str(model_out), "split_strategy": "chronological_holdout"}
 
         report_out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         mlflow.log_params(best_params)

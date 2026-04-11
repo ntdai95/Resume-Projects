@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 import joblib
 import mlflow
@@ -17,18 +17,17 @@ def train_xgboost_from_parquet(parquet_path: str, model_out: str, config_path: s
         cfg = yaml.safe_load(f)
 
     df = pd.read_parquet(parquet_path)
+    if "time_ts" in df.columns:
+        df["time_ts"] = pd.to_datetime(df["time_ts"], errors="coerce")
+        sort_cols = ["time_ts"]
+        if "dataset_id" in df.columns:
+            sort_cols = ["dataset_id", "time_ts"]
+
+        df = df.sort_values(sort_cols).reset_index(drop=True)
+
     target = cfg["forecasting"]["target_variable"]
-    drop_cols = [
-        target,
-        "source_variable",
-        "canonical_variable",
-        "units",
-        "normalized_unit",
-        "source_file",
-        "dataset_id",
-        "provenance_transform",
-        "time_ts",
-    ]
+    drop_cols = [target, "source_variable", "canonical_variable", "units", "normalized_unit", "source_file",
+                 "dataset_id", "provenance_transform", "time_ts"]
 
     feature_cols = [c for c in df.columns if c not in drop_cols]
     X = df[feature_cols]
@@ -46,41 +45,24 @@ def train_xgboost_from_parquet(parquet_path: str, model_out: str, config_path: s
         mlflow.log_params(params)
         mlflow.log_param("train_rows", len(X_train))
         mlflow.log_param("test_rows", len(X_test))
-        mlflow.log_param("num_features", len(feature_cols))
-        mlflow.log_param("dataset_path", parquet_path)
+        mlflow.log_param("feature_count", len(feature_cols))
+        mlflow.log_param("split_strategy", "chronological_holdout")
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
-        mae = float(mean_absolute_error(y_test, preds))
-        rmse = float(math.sqrt(mean_squared_error(y_test, preds)))
-        r2 = float(r2_score(y_test, preds))
-        metrics = {
-            "mae": mae,
-            "rmse": rmse,
-            "r2": r2,
-        }
-
+        rmse = math.sqrt(mean_squared_error(y_test, preds))
+        mae = mean_absolute_error(y_test, preds)
+        r2 = r2_score(y_test, preds)
+        metrics = {"rmse": float(rmse), "mae": float(mae), "r2": float(r2)}
         mlflow.log_metrics(metrics)
-        mlflow.xgboost.log_model(model, "model")
+        feature_importance = dict(zip(feature_cols, model.feature_importances_.tolist()))
+        model_package = {"model": model, "feature_cols": feature_cols, "metrics": metrics,
+                         "trained_at": datetime.now(timezone.utc).isoformat()}
+
         Path(model_out).parent.mkdir(parents=True, exist_ok=True)
-        model_package = {
-            "model": model,
-            "features": feature_cols,
-            "training_time": datetime.utcnow().isoformat(),
-            "dataset": str(parquet_path),
-            "params": params,
-            "metrics": metrics,
-        }
-
         joblib.dump(model_package, model_out)
-        mlflow.log_artifact(model_out)
+        mlflow.xgboost.log_model(model, artifact_path="model")
 
-    details = {
-        "y_test": y_test.tolist(),
-        "preds": preds.tolist(),
-        "feature_cols": feature_cols,
-        "feature_importance": dict(
-            zip(feature_cols, model.feature_importances_.tolist())
-        ),
-    }
-
+    details = {"feature_cols": feature_cols, "feature_importance": feature_importance, "y_test": y_test.tolist(),
+               "preds": preds.tolist()}
+    
     return metrics, details
