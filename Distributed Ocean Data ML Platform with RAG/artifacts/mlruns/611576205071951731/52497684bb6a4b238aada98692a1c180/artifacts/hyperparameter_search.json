@@ -1,0 +1,23 @@
+{
+  "best_params": {
+    "n_estimators": 250,
+    "max_depth": 10,
+    "learning_rate": 0.0818898781345043,
+    "subsample": 0.7860982098296005,
+    "colsample_bytree": 0.918910631975752,
+    "reg_alpha": 2.2151368987017134e-05,
+    "reg_lambda": 0.0014331846838272727,
+    "random_state": 42,
+    "objective": "reg:squarederror",
+    "n_jobs": -1
+  },
+  "metrics": {
+    "mae": 0.004537648300327516,
+    "rmse": 0.005858584769595622,
+    "r2": 0.9999147224600109
+  },
+  "best_value": 0.005858584769595622,
+  "n_trials": 25,
+  "model_path": "artifacts\\models\\temperature_forecaster_tuned.joblib",
+  "split_strategy": "chronological_holdout"
+}

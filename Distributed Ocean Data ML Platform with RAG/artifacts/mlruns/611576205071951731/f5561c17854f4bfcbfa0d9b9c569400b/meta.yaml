@@ -1,0 +1,16 @@
+artifact_uri: file:///C:/Users/ngota/OneDrive/Desktop/Github/Resume-Projects/Distributed
+  Ocean Data ML Platform with RAG/artifacts/mlruns/611576205071951731/f5561c17854f4bfcbfa0d9b9c569400b/artifacts
+end_time: 1777855881764
+entry_point_name: ''
+experiment_id: '611576205071951731'
+lifecycle_stage: active
+run_id: f5561c17854f4bfcbfa0d9b9c569400b
+run_name: train_baseline_xgboost
+run_uuid: f5561c17854f4bfcbfa0d9b9c569400b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777855876156
+status: 3
+tags: []
+user_id: ngota

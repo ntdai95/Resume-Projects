@@ -1,4 +1,4 @@
-.PHONY: manifest harmonize features train evaluate hyperparameters index benchmark clean setup services all api test
+.PHONY: manifest harmonize features train evaluate hyperparameters index benchmark clean setup services all api demo test
 
 manifest:
 	python -m scripts.extract_manifest
@@ -28,6 +28,7 @@ clean:
 	rm -rf data/bronze/*
 	rm -rf data/silver/*
 	rm -rf data/gold/*
+	rm -rf data/manifests/*
 	rm -rf artifacts/models/*
 	rm -rf artifacts/reports/*
 	rm -rf artifacts/plots/*
@@ -42,6 +43,9 @@ all: manifest harmonize features train evaluate hyperparameters index benchmark
 
 api:
 	uvicorn app.main:app
+
+demo:
+	streamlit run streamlit_app.py
 
 test:
 	python -m pytest -q

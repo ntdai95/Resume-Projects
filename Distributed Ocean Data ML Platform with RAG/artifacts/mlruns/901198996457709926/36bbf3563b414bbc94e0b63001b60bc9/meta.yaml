@@ -1,0 +1,16 @@
+artifact_uri: file:///C:/Users/ngota/OneDrive/Desktop/Github/Resume-Projects/Distributed
+  Ocean Data ML Platform with RAG/artifacts/mlruns/901198996457709926/36bbf3563b414bbc94e0b63001b60bc9/artifacts
+end_time: 1777855747814
+entry_point_name: ''
+experiment_id: '901198996457709926'
+lifecycle_stage: active
+run_id: 36bbf3563b414bbc94e0b63001b60bc9
+run_name: retrieval_eval
+run_uuid: 36bbf3563b414bbc94e0b63001b60bc9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777855747641
+status: 3
+tags: []
+user_id: ngota
