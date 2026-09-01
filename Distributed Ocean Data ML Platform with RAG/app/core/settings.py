@@ -22,6 +22,8 @@ class Settings:
     rag_eval_rows_path = Path(os.getenv("RAG_EVAL_ROWS_PATH", "./artifacts/reports/rag_eval_rows.jsonl"))
     prediction_plot_path = Path(os.getenv("PREDICTION_PLOT_PATH", "./artifacts/plots/prediction_vs_actual.png"))
     residual_plot_path = Path(os.getenv("RESIDUAL_PLOT_PATH", "./artifacts/plots/residuals.png"))
+    horizon_report_path = Path(os.getenv("HORIZON_REPORT_PATH", "./artifacts/reports/horizon_experiment.json"))
+    horizon_plot_path = Path(os.getenv("HORIZON_PLOT_PATH", "./artifacts/plots/horizon_experiment.png"))
     embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     vector_backend = os.getenv("VECTOR_BACKEND", "qdrant")
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")

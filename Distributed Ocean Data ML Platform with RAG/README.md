@@ -52,6 +52,55 @@ no change," and that headroom is the honest thing to report.
 
 ---
 
+## Does a longer horizon or more sensors change the story?
+
+The one-step result above raises an obvious follow-up: does XGBoost close
+the gap at a longer forecast horizon, where "assume no change" should
+eventually run out of room? And does giving the model the site's other
+sensors — salinity and dissolved oxygen, sampled at the same mooring —
+help it forecast temperature? `scripts/horizon_experiment.py` tests both:
+at seven horizons from 1 second to 2 hours, it trains one XGBoost model on
+temperature's own lags and time features, and a second with salinity and
+oxygen added, and compares both to persistence under the same chronological
+split.
+
+| Horizon | Persistence RMSE | XGBoost (temp only) RMSE | XGBoost (+ salinity, oxygen) RMSE |
+|---|---|---|---|
+| 1 s | 0.004 | 0.008 | 0.009 |
+| 30 s | 0.038 | 0.048 | 0.060 |
+| 5 min | 0.094 | 0.281 | 0.322 |
+| 15 min | 0.153 | 0.334 | 0.376 |
+| 30 min | 0.211 | 0.440 | 0.436 |
+| 1 hr | 0.286 | 0.425 | 0.557 |
+| 2 hr | 0.392 | 0.681 | 0.714 |
+
+Persistence wins at every horizon tested, and the gap widens rather than
+closes. At 1 and 2 hours out, both XGBoost variants post a **negative R²**
+(-1.40 for temperature-only, -1.64 with sensor context) — worse than
+predicting the test set's mean. Adding salinity and oxygen makes the model
+worse at five of the seven horizons, not better.
+
+This is a coherent result, not noise. The temperature series over this
+six-week window behaves like a smooth, near-diffusive process: the current
+reading already carries most of the available information about the near
+future, and there is little genuine local trend to extrapolate. The
+lag-difference trend feature and the cross-sensor context let XGBoost fit
+fine-grained patterns in the training period's chronological 80%; at longer
+horizons those patterns increasingly describe training-period noise rather
+than anything that recurs in the held-out final 20%, so the model's error
+compounds while persistence's does not — persistence never had a training
+period to overfit in the first place. Full numbers, including MAE and R²
+at every horizon, are in `artifacts/reports/horizon_experiment.json`; the
+error curve is plotted in `artifacts/plots/horizon_experiment.png`.
+
+The practical conclusion: for this sensor, at these horizons, engineered
+features and multi-sensor context measurably hurt point-forecast accuracy
+rather than helping. That's a more useful result to publish than either
+the original 0.9999 R² or a model that quietly beat a baseline nobody
+checked.
+
+---
+
 ## RAG retrieval
 
 `scripts/run_rag_benchmark.py` runs 4 hand-written queries against the
@@ -180,7 +229,8 @@ scripts/
  ├── hyperparameter_search.py  Optuna search over XGBoost params
  ├── build_index.py            Metadata + model-report docs -> vector index
  ├── run_rag_benchmark.py      Retrieval eval (hit@k, term recall)
- └── run_full_pipeline.py      Runs all of the above in order
+ ├── horizon_experiment.py     Persistence vs. XGBoost across 7 horizons, with/without sensor context
+ └── run_full_pipeline.py      Runs the ingestion-to-RAG steps above in order (horizon_experiment.py is a standalone analysis, run separately)
 
 tests/       7 test modules covering the API, features, hashing, prediction, RAG eval, Spark harmonization, and training
 configs/     model_config.yaml (target variable, split fraction, XGBoost params)
@@ -282,6 +332,9 @@ API endpoints: `/health`, `/predict`, `/metrics`, `/search`, `/ask`,
 
 Tests: `python -m pytest -q`.
 
+Horizon/context experiment (needs `data/silver/` populated, from
+`run_full_pipeline` or `spark_harmonize` alone): `python -m scripts.horizon_experiment`.
+
 To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 `data/gold/`, `data/manifests/`, `data/index/`, `artifacts/`, then rerun
 `python -m scripts.run_full_pipeline`.
@@ -290,7 +343,7 @@ To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 
 ## Limitations
 
-- Short-horizon forecasting only (`lag_1`/`lag_3`/`lag_6`, no true multi-step forecast horizon).
+- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one.
 - One region, six weeks of data — no test of generalization across seasons or locations.
 - RAG evaluation is 4 hand-written queries, not a held-out benchmark.
 - Single-machine Spark (`local[*]`), not a real cluster.
