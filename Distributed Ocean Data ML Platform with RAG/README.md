@@ -101,6 +101,58 @@ checked.
 
 ---
 
+## Testing the method on a signal that should be forecastable
+
+Everything above says persistence wins because subsurface ocean temperature
+is close to a random walk at these sampling rates -- there's no local trend
+to extrapolate. That's a claim about the *signal*, not a limitation of
+XGBoost or the feature set, and it's worth checking against a series that
+has a real, physically obvious predictable component. `scripts/air_temperature_benchmark.py`
+runs the identical persistence-vs-XGBoost comparison, at horizons from 1
+minute to 24 hours, against air temperature from ONC's Baynes Sound
+meteorological station (same regional network, ~4.5 months at 1-minute
+resolution, pulled live from ONC's ERDDAP server rather than the fixed
+NetCDF snapshots in `data/raw/`) -- a signal with an obvious deterministic
+driver, the daily solar heating cycle, that a naive "assume no change"
+forecast has no way to anticipate.
+
+| Horizon | Persistence RMSE | XGBoost (air temp only) | XGBoost (+ pressure, wind) |
+|---|---|---|---|
+| 1 min | 0.079 | 0.124 | 0.123 |
+| 15 min | 0.411 | 0.498 | 0.494 |
+| 1 hr | 0.829 | 0.884 | 0.833 |
+| 3 hr | 1.640 | 1.217 | 1.171 |
+| 6 hr | 2.556 | 1.673 | 1.599 |
+| 12 hr | 3.509 | 2.054 | **1.823** |
+| 24 hr | 1.460 | 1.957 | 1.531 |
+
+This is the crossover the ocean data never showed. Persistence wins at
+sub-hour horizons -- nothing beats "no change" a minute from now -- but
+loses decisively from 3 hours out: at 6 and 12 hours its R² is actually
+**negative** (-0.57 and -1.95), while XGBoost with pressure and wind stays
+positive (0.39 and 0.20) and cuts RMSE by up to 48% at the 12-hour mark.
+Persistence partially recovers at exactly 24 hours, because "same time
+yesterday" is a genuinely strong forecast for a diurnal signal and none of
+this model's features (lags of a few minutes, plus categorical hour/day)
+give it an equivalent to that literal day-old reading.
+
+Cross-sensor context helps here, consistently, which is the opposite of
+the ocean result: barometric pressure trend is a standard meteorological
+predictor of near-term temperature change, so adding it is exploiting a
+real physical relationship rather than fitting noise the training period
+won't repeat. Full metrics (RMSE, MAE, R² at every horizon) are in
+`artifacts/reports/air_temperature_benchmark.json`; the plot is
+`artifacts/plots/air_temperature_benchmark.png`.
+
+Together, the two experiments are the actual point: the same pipeline,
+unchanged, correctly finds no exploitable structure in one signal and real,
+substantial structure in another, for reasons that follow from the physics
+of each. That's what "the model works" should mean here -- not a single
+headline metric, but a method that gets the right answer on both a
+negative and a positive case.
+
+---
+
 ## RAG retrieval
 
 `scripts/run_rag_benchmark.py` runs 4 hand-written queries against the
@@ -229,8 +281,9 @@ scripts/
  ├── hyperparameter_search.py  Optuna search over XGBoost params
  ├── build_index.py            Metadata + model-report docs -> vector index
  ├── run_rag_benchmark.py      Retrieval eval (hit@k, term recall)
- ├── horizon_experiment.py     Persistence vs. XGBoost across 7 horizons, with/without sensor context
- └── run_full_pipeline.py      Runs the ingestion-to-RAG steps above in order (horizon_experiment.py is a standalone analysis, run separately)
+ ├── horizon_experiment.py       Persistence vs. XGBoost across 7 horizons, with/without sensor context (ocean temperature)
+ ├── air_temperature_benchmark.py  Same comparison against ONC's Baynes Sound met station (air temperature)
+ └── run_full_pipeline.py      Runs the ingestion-to-RAG steps above in order (the two benchmark scripts above are standalone analyses, run separately)
 
 tests/       7 test modules covering the API, features, hashing, prediction, RAG eval, Spark harmonization, and training
 configs/     model_config.yaml (target variable, split fraction, XGBoost params)
@@ -282,6 +335,13 @@ Every raw file is SHA256-hashed on ingestion (`app/ingestion/hashing.py`)
 and recorded in `data/manifests/source_manifest.jsonl`, so `/provenance`
 can trace any prediction or document back to the exact source file it came
 from.
+
+A seventh source, ONC's Baynes Sound meteorological station (~120k rows,
+1-minute resolution, pulled live from ONC's public ERDDAP server), backs
+the air temperature comparison in `scripts/air_temperature_benchmark.py`.
+It's independent of the six files above -- CSV rather than NetCDF, and not
+part of the Bronze/Silver/Gold pipeline -- so it isn't in this table or the
+SHA256 manifest.
 
 ---
 
@@ -335,6 +395,10 @@ Tests: `python -m pytest -q`.
 Horizon/context experiment (needs `data/silver/` populated, from
 `run_full_pipeline` or `spark_harmonize` alone): `python -m scripts.horizon_experiment`.
 
+Air temperature benchmark (downloads its own CSV from ONC's ERDDAP server
+on first run -- see the script for the source URL):
+`python -m scripts.air_temperature_benchmark`.
+
 To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 `data/gold/`, `data/manifests/`, `data/index/`, `artifacts/`, then rerun
 `python -m scripts.run_full_pipeline`.
@@ -343,7 +407,7 @@ To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 
 ## Limitations
 
-- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one.
-- One region, six weeks of data — no test of generalization across seasons or locations.
+- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real skill at 3-12 hour horizons -- see above -- but that comparison isn't wired into the API.)
+- One region, six weeks of data for the core ocean pipeline — no test of generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
 - RAG evaluation is 4 hand-written queries, not a held-out benchmark.
 - Single-machine Spark (`local[*]`), not a real cluster.
