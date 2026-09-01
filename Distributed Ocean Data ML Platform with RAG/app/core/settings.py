@@ -36,7 +36,7 @@ class Settings:
     mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "./artifacts/mlruns")
     mlflow_experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "ocean_forecasting_spark")
     mlflow_rag_experiment_name = os.getenv("MLFLOW_RAG_EXPERIMENT_NAME", "ocean_rag_evaluation")
-    rag_eval_top_k = int(os.getenv("RAG_EVAL_TOP_K", "5"))
+    rag_eval_top_k = int(os.getenv("RAG_EVAL_TOP_K", "2"))
 
 
     @classmethod

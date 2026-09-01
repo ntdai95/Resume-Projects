@@ -23,20 +23,44 @@ class RetrievalEvalRow:
 def default_eval_set():
     return [
         RetrievalEvalExample(
-            question="Which datasets contain sea water temperature?",
-            relevant_terms=["sea water temperature", "temperature"],
+            question="Which Ocean Networks Canada sensor recorded the water's temperature?",
+            relevant_terms=["onc", "temperature"],
         ),
         RetrievalEvalExample(
-            question="Which datasets mention salinity?",
+            question="Which NOAA dataset holds sea surface temperature readings?",
+            relevant_terms=["noaa", "temp"],
+        ),
+        RetrievalEvalExample(
+            question="What variable would show whether the seawater is getting saltier?",
             relevant_terms=["salinity"],
         ),
         RetrievalEvalExample(
-            question="Which sensors recorded dissolved oxygen?",
-            relevant_terms=["dissolved oxygen", "oxygen"],
+            question="Which sensor tracks how much oxygen is dissolved in the water?",
+            relevant_terms=["oxygen"],
         ),
         RetrievalEvalExample(
-            question="Which datasets include pressure variables?",
+            question="Is there a file that records barometric or water pressure readings?",
             relevant_terms=["pressure"],
+        ),
+        RetrievalEvalExample(
+            question="Which file has wind speed measurements?",
+            relevant_terms=["wind"],
+        ),
+        RetrievalEvalExample(
+            question="How accurate is the trained temperature forecasting model?",
+            relevant_terms=["rmse", "r2"],
+        ),
+        RetrievalEvalExample(
+            question="What hyperparameters did the Optuna search settle on for the tuned model?",
+            relevant_terms=["best_params"],
+        ),
+        RetrievalEvalExample(
+            question="Does forecasting skill for ocean water temperature change at longer time horizons?",
+            relevant_terms=["horizon_seconds"],
+        ),
+        RetrievalEvalExample(
+            question="Is air temperature more predictable than water temperature at longer horizons?",
+            relevant_terms=["horizon_minutes"],
         ),
     ]
 

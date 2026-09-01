@@ -109,10 +109,11 @@ to extrapolate. That's a claim about the *signal*, not a limitation of
 XGBoost or the feature set, and it's worth checking against a series that
 has a real, physically obvious predictable component. `scripts/air_temperature_benchmark.py`
 runs the identical persistence-vs-XGBoost comparison, at horizons from 1
-minute to 24 hours, against air temperature from ONC's Baynes Sound
-meteorological station (same regional network, ~4.5 months at 1-minute
-resolution, pulled live from ONC's ERDDAP server rather than the fixed
-NetCDF snapshots in `data/raw/`) -- a signal with an obvious deterministic
+minute to 24 hours, against air temperature from ONC's [Baynes Sound
+meteorological station](https://dap.oceannetworks.ca/erddap/tabledap/scalar_1203278.html)
+(same regional network, ~4.5 months at 1-minute resolution, pulled live
+from ONC's ERDDAP server rather than the fixed NetCDF snapshots in
+`data/raw/`) -- a signal with an obvious deterministic
 driver, the daily solar heating cycle, that a naive "assume no change"
 forecast has no way to anticipate.
 
@@ -155,14 +156,42 @@ negative and a positive case.
 
 ## RAG retrieval
 
-`scripts/run_rag_benchmark.py` runs 4 hand-written queries against the
-metadata + model-report index and checks whether the top retrieved chunk
-contains the expected answer terms:
+The corpus is small by construction -- 6 source files plus 4 experiment
+reports (model metrics, hyperparameter search, and both horizon
+benchmarks) -- so a retrieval eval here can't claim what a large-scale
+benchmark would. It's sized and scored to be honest about that rather than
+to produce a clean number: `scripts/run_rag_benchmark.py` runs 10
+natural-language questions (not paraphrases of the target labels, and
+covering every document at least once) at `top_k=2`, a real filter against
+a 10-document corpus rather than the `top_k=5` an earlier version used,
+which returned half the corpus on every query regardless of relevance.
 
 | Metric | Value |
 |---|---|
-| hit@k | 1.0 |
-| term recall | 0.875 |
+| hit@k | 0.9 (9/10) |
+| term recall | 0.85 |
+
+The one miss is a legible failure, not noise: asked whether ocean water
+temperature's forecast skill changes at longer horizons, the retriever
+returned the model-metrics document instead of the horizon-experiment one
+-- a reasonable confusion between two documents that are both, in a
+shallow sense, "about the model." Full per-query results are in
+`artifacts/reports/rag_eval_rows.jsonl`.
+
+This replaced an earlier version of this eval that scored a suspicious
+1.0: 4 queries that were near-restatements of the target term (*"which
+datasets mention salinity?"*) against a `top_k` that returned most of the
+corpus regardless of the question. Fixing it surfaced a real bug along the
+way -- `app/rag/runtime.py` built each document's text with
+`', '.join(row['variables'])` where `variables` was already a
+comma-joined string, not a list, so `join` iterated its characters and
+every document advertised its variables as `t, i, m, e, ..., o, x, y, g,
+e, n` instead of `time, oxygen_corrected`. It still retrieved correctly
+often enough to pass the old eval, which is exactly why the old eval
+wasn't testing much. The fix also dropped two attributes the raw NOAA
+files carry -- `title` and `institution` -- that turned out to be
+generic boilerplate from an unrelated NOAA program and would have made the
+retriever's context look wrong to anyone who read it closely.
 
 ---
 
@@ -299,7 +328,8 @@ data/
 
 artifacts/   MLflow runs, saved models, evaluation reports (tracked in git)
 streamlit_app.py
-docker-compose.yml
+Dockerfile           Builds the API image
+docker-compose.yml   qdrant + api services
 ```
 
 ---
@@ -343,6 +373,23 @@ It's independent of the six files above -- CSV rather than NetCDF, and not
 part of the Bronze/Silver/Gold pipeline -- so it isn't in this table or the
 SHA256 manifest.
 
+### Where the data comes from
+
+Each NetCDF file carries its own citation in its global attributes, pulled
+directly from `data/manifests/source_manifest.jsonl`:
+
+| File | Source |
+|---|---|
+| `onc_oxygen.nc` | [doi.org/10.34943/922beebb-a573-477a-9b12-8d0d63b977a3](https://doi.org/10.34943/922beebb-a573-477a-9b12-8d0d63b977a3) (Ocean Networks Canada) |
+| `onc_salinity.nc`, `onc_temperature.nc` | [doi.org/10.34943/39c52da2-0fd7-46d1-88a3-57d284b78d77](https://doi.org/10.34943/39c52da2-0fd7-46d1-88a3-57d284b78d77) (Ocean Networks Canada) |
+| `noaa_pressure.nc`, `noaa_sst.nc` | [fisheries.noaa.gov/.../deep-sea-coral-habitat](https://www.fisheries.noaa.gov/national/habitat-conservation/deep-sea-coral-habitat) (NOAA reference embedded in the file; the underlying dataset is served through [NOAA's ERDDAP](https://www.ncei.noaa.gov/erddap/index.html)) |
+| `noaa_wind.nc` | [coastalscience.noaa.gov/.../pmn](https://coastalscience.noaa.gov/monitoring-and-assessments/pmn/) (NOAA reference embedded in the file) |
+| Baynes Sound met station (air temperature) | [dap.oceannetworks.ca/erddap/tabledap/scalar_1203278](https://dap.oceannetworks.ca/erddap/tabledap/scalar_1203278.html) (Ocean Networks Canada ERDDAP; `scripts/air_temperature_benchmark.py` downloads this one directly) |
+
+Both networks also expose full search catalogs for finding other stations
+or variables: [ONC's ERDDAP](https://dap.oceannetworks.ca/erddap/index.html)
+and [NOAA's ERDDAP](https://www.ncei.noaa.gov/erddap/index.html).
+
 ---
 
 ## Environment setup
@@ -385,6 +432,18 @@ ollama run llama3                 # local LLM for /ask
 python -m scripts.run_full_pipeline
 uvicorn app.main:app              # http://127.0.0.1:8000/docs
 streamlit run streamlit_app.py    # http://localhost:8501, separate terminal
+```
+
+The API and the vector store are both containerized (`Dockerfile`,
+`docker-compose.yml`); Spark, training, and the benchmark scripts are not
+-- they're one-off batch jobs, not long-running services, and run directly
+against the host Python environment. Once the pipeline above has produced
+`data/` and `artifacts/` on the host, `docker compose up -d` starts both
+containers, mounting those directories in read-write so the API serves
+whatever the host-run pipeline last produced:
+
+```bash
+docker compose up -d              # qdrant + the FastAPI service, http://localhost:8000/docs
 ```
 
 API endpoints: `/health`, `/predict`, `/metrics`, `/search`, `/ask`,

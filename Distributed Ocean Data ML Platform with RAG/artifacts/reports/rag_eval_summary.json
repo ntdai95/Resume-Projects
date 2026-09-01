@@ -1,8 +1,8 @@
 {
-  "num_queries": 4,
-  "top_k": 5,
+  "num_queries": 10,
+  "top_k": 2,
   "metrics": {
-    "hit_at_k": 1.0,
-    "term_recall": 0.875
+    "hit_at_k": 0.9,
+    "term_recall": 0.85
   }
 }
