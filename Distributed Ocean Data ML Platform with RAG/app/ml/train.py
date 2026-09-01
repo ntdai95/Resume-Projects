@@ -27,7 +27,7 @@ def train_xgboost_from_parquet(parquet_path: str, model_out: str, config_path: s
 
     target = cfg["forecasting"]["target_variable"]
     drop_cols = [target, "source_variable", "canonical_variable", "units", "normalized_unit", "source_file",
-                 "dataset_id", "provenance_transform", "time_ts"]
+                 "dataset_id", "provenance_transform", "time_ts", "time", "value", "row"]
 
     feature_cols = [c for c in df.columns if c not in drop_cols]
     X = df[feature_cols]

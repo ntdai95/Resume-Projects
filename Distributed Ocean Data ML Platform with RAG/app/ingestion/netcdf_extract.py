@@ -18,17 +18,25 @@ def _normalize_time_like_columns(df):
     return df
 
 
+CONTEXT_VARIABLES = {"time", "latitude", "longitude"}
+
+
 def extract_netcdf_to_frames(file_path):
     ds = xr.open_dataset(file_path, engine="netcdf4")
+
+    full_df = ds.to_dataframe().reset_index()
+    full_df = _normalize_time_like_columns(full_df)
+    context_cols = [c for c in CONTEXT_VARIABLES if c in full_df.columns]
+    measurement_vars = [v for v in ds.data_vars if v not in CONTEXT_VARIABLES]
+
     obs_frames = []
     skipped_variables = []
-    for var in ds.data_vars:
-        df = ds[[var]].to_dataframe().reset_index()
-        df = _normalize_time_like_columns(df)
-        if not is_numeric_dtype(df[var]):
+    for var in measurement_vars:
+        if not is_numeric_dtype(full_df[var]):
             skipped_variables.append(var)
             continue
 
+        df = full_df[context_cols + [var]].copy()
         df = df.rename(columns={var: "value"})
         df["source_variable"] = var
         df["source_file"] = str(file_path)
@@ -42,7 +50,7 @@ def extract_netcdf_to_frames(file_path):
         {
             "source_file": str(file_path),
             "variables": ",".join(list(ds.data_vars)),
-            "numeric_variables": ",".join([v for v in ds.data_vars if v not in skipped_variables]),
+            "numeric_variables": ",".join([v for v in measurement_vars if v not in skipped_variables]),
             "skipped_variables": ",".join(skipped_variables),
             "coordinates": ",".join(list(ds.coords)),
             "attrs": str(dict(ds.attrs)),

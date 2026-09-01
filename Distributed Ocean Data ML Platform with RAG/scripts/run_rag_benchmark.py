@@ -1,6 +1,5 @@
-import json
 import torch
-from sentence_transformers import SentenceTransformer
+import json
 from app.core.settings import settings
 from app.rag.evaluation import evaluate_retriever, save_retrieval_eval
 from app.rag.runtime import load_docs

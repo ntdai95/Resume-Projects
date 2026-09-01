@@ -1,3 +1,6 @@
+import torch
+
+
 class Embedder:
     def __init__(self, model_name):
         from sentence_transformers import SentenceTransformer

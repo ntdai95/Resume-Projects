@@ -26,6 +26,18 @@ def load_docs():
                     }
                 )
 
+    metrics_path = Path(settings.metrics_report_path)
+    if metrics_path.exists():
+        docs.append(
+            {
+                "doc_id": "model-metrics",
+                "dataset_id": "model",
+                "source_file": str(metrics_path),
+                "variable": "",
+                "text": "Model metrics: " + metrics_path.read_text(),
+            }
+        )
+
     return docs
 
 

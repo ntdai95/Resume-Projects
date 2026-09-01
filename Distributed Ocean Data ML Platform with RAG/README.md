@@ -1,41 +1,117 @@
-# 🌊 Ocean Data Harmonization + Distributed ML + RAG System
+# Ocean Data Harmonization, Forecasting, and RAG Platform
 
-A **production-style machine learning platform** that ingests heterogeneous ocean datasets, harmonizes them using Apache Spark, trains forecasting models, and exposes a Retrieval-Augmented Generation (RAG) interface for natural-language exploration of ocean data.
+An end-to-end pipeline that ingests raw NetCDF ocean sensor data from two
+independent providers, harmonizes it with Apache Spark, trains an XGBoost
+temperature forecaster, and exposes a retrieval-augmented question-answering
+interface over the resulting metadata. A FastAPI service and Streamlit demo
+sit on top.
 
-This project demonstrates a full  **end-to-end ML system** , including:
-
-* distributed data processing with Apache Spark
-* NetCDF dataset ingestion and metadata extraction
-* SHA256 source manifest generation
-* Bronze → Silver → Gold data pipeline
-* data harmonization and feature engineering
-* XGBoost forecasting
-* hyperparameter optimization with Optuna
-* experiment tracking with MLflow
-* vector search using Qdrant and FAISS
-* retrieval-augmented generation (RAG)
-* retrieval benchmarking
-* FastAPI service
-* Streamlit demo UI
-* automated tests
-* full pipeline orchestration
+```bash
+pip install -r requirements.txt
+docker compose up -d qdrant
+python -m scripts.run_full_pipeline
+uvicorn app.main:app
+```
 
 ---
 
-# Tested Environment
+## Headline result
 
-| Component              | Version                 |
-| ---------------------- | ----------------------- |
-| Python                 | 3.11                    |
-| OS                     | Windows / Linux / macOS |
-| Vector DB              | Qdrant                  |
-| LLM                    | Ollama                  |
-| API                    | FastAPI                 |
-| Distributed Processing | Apache Spark            |
+| Model | RMSE | MAE | R² |
+|---|---|---|---|
+| Naive persistence (predict = previous reading) | **0.00442** | **0.00198** | **0.99990** |
+| XGBoost, default params | 0.00823 | 0.00628 | 0.99967 |
+| XGBoost, tuned (Optuna, 25 trials) | 0.00715 | 0.00538 | 0.99975 |
+
+Tuning closes about 13% of the gap over the default model, but neither
+XGBoost run beats the trivial baseline of repeating the last reading. **Read
+this alongside the caveat below** — an R² of 0.9997 looks like a strong
+forecaster in isolation, and only looks ordinary once it's checked against a
+model that learns nothing at all.
 
 ---
 
-# System Architecture
+## The persistence-baseline caveat
+
+Ocean temperature at a few readings per minute barely moves between
+consecutive samples, so `lag_1` (the previous reading) is already close to
+the physical ceiling on this task. The XGBoost models have that same
+`lag_1` value as an input feature, so this isn't a case of the baseline
+having information the model lacks. Rather, a tree ensemble approximates a
+near-identity function with a finite set of leaf-value outputs, which
+introduces a discretization error that copying the previous value exactly
+does not have. On a signal this smooth, that quantization error costs more
+than a few trees' worth of interaction terms and lag/time features gain
+back.
+
+This project keeps the comparison in the README on purpose. A model
+metrics report with only the XGBoost numbers would read as a successful
+forecaster; checked against persistence, it's evidence that short-horizon
+temperature forecasting on this data has very little headroom over "assume
+no change," and that headroom is the honest thing to report.
+
+---
+
+## RAG retrieval
+
+`scripts/run_rag_benchmark.py` runs 4 hand-written queries against the
+metadata + model-report index and checks whether the top retrieved chunk
+contains the expected answer terms:
+
+| Metric | Value |
+|---|---|
+| hit@k | 1.0 |
+| term recall | 0.875 |
+
+---
+
+## Bugs found and fixed while building this
+
+The pipeline runs clean now, but it didn't when this pass started. Three
+bugs were serious enough to invalidate the numbers above if left in place,
+and are worth documenting because none of them threw an error — the code
+ran, produced plausible-looking metrics, and was wrong.
+
+**Target leakage via the raw pre-normalization value.** The feature table
+included both `value` (the raw measurement, e.g. degrees Kelvin) and the
+target `normalized_value` (`value - 273.15`, degrees Celsius). Any model can
+recover the target from that feature with one subtraction, which is exactly
+why an earlier version of this pipeline reported R² above 0.9999 — it had
+memorized arithmetic, not learned a forecast. Fixed by excluding `value`
+(and the meaningless positional index `row`) from the feature columns in
+both `app/ml/train.py` and `scripts/hyperparameter_search.py`.
+
+**Context columns orphaned from their measurements.** Each NetCDF file
+stores `time`, `latitude`, and `longitude` as data variables sharing a
+`row` dimension with the actual measurements, not as indexed coordinates.
+`extract_netcdf_to_frames` pulled one variable out of the dataset at a time
+(`ds[[var]].to_dataframe()`), which silently dropped every row's link back
+to its own timestamp and position — `hour` and `dayofyear` were 100% null,
+and the chronological sort that the training code was already written to
+do never had a real `time_ts` column to sort on. Fixed by extracting the
+whole dataset once per file and carrying `time`/`latitude`/`longitude`
+alongside each measurement row instead of re-deriving them per variable.
+
+**An entire data source silently excluded.** NOAA's sea-surface
+temperature file stores its variable as `TEMP_C` (already in Celsius); ONC's
+stores `Temperature` (in Kelvin). The harmonization step's synonym list only
+recognized the ONC name, so every NOAA temperature reading — 145k rows —
+canonicalized to nothing and never reached the model, despite being counted
+in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
+generalizing the Celsius/Kelvin normalization so a value already in Celsius
+is relabeled rather than double-converted.
+
+A fourth issue was environmental rather than a data bug: on Windows,
+importing `mlflow` before `torch` in the same process leaves torch's
+`c10.dll` unable to initialize (`WinError 1114`), which broke the RAG
+benchmark step specifically because `app.rag.evaluation` imports mlflow
+before anything imports the embedding model. Fixed by importing `torch`
+first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
+`app/retrieval/embedder.py`.
+
+---
+
+## System architecture
 
 ```
 Raw Ocean Data: NOAA + ONC NetCDF
@@ -55,7 +131,7 @@ Spark Harmonization             Metadata Documents
 Silver Layer                    Text Chunking
         |                             |
         v                             v
-Spark Feature Engineering       SentenceTransformer Embeddings
+Spark Feature Engineering       Sentence-Transformer Embeddings
         |                             |
         v                             v
 Gold Feature Table              Qdrant / FAISS Vector Index
@@ -75,174 +151,98 @@ FastAPI /predict + /metrics     FastAPI /search + /ask
               Streamlit Demo UI
 ```
 
-The system shares a common ingestion pipeline and splits into:
-
-* Forecasting path: Spark → features → XGBoost → prediction API
-* RAG path: metadata → embeddings → vector search → QA API
+One shared ingestion pipeline (raw NetCDF → SHA256-hashed bronze layer →
+Spark harmonization) feeds two independent paths: forecasting
+(harmonize → feature engineering → XGBoost → `/predict`) and RAG
+(metadata → embeddings → vector search → `/ask`).
 
 ---
 
-# Repository Structure
+## Repository structure
 
 ```
 app/
- ├── api/
- ├── core/
- ├── ingestion/
- ├── ml/
- ├── rag/
- ├── retrieval/
- ├── spark_jobs/
+ ├── api/          FastAPI routers: predict, search, ask, metrics, eval, provenance, health
+ ├── core/         Settings (.env-driven paths, backend selection)
+ ├── ingestion/    NetCDF extraction, SHA256 hashing
+ ├── ml/           Training, MLflow experiment tracking
+ ├── rag/          Answering, prompt templates, retrieval evaluation, runtime doc loading
+ ├── retrieval/    Chunking, embedding, Qdrant/FAISS vector stores, retriever
+ ├── spark_jobs/   Harmonization and feature-engineering Spark jobs
  └── main.py
 
 scripts/
- ├── extract_manifest.py
- ├── spark_harmonize.py
- ├── spark_build_features.py
- ├── train_baseline_model.py
- ├── evaluate_model.py
- ├── hyperparameter_search.py
- ├── build_index.py
- ├── run_rag_benchmark.py
- └── run_full_pipeline.py
+ ├── extract_manifest.py       NetCDF -> bronze (observations + metadata + source manifest)
+ ├── spark_harmonize.py        bronze -> silver (canonicalize variables, normalize units)
+ ├── spark_build_features.py   silver -> gold (lag/time features for temperature)
+ ├── train_baseline_model.py   Gold table -> XGBoost baseline, logged to MLflow
+ ├── evaluate_model.py         Reload the saved model, recompute metrics
+ ├── hyperparameter_search.py  Optuna search over XGBoost params
+ ├── build_index.py            Metadata + model-report docs -> vector index
+ ├── run_rag_benchmark.py      Retrieval eval (hit@k, term recall)
+ └── run_full_pipeline.py      Runs all of the above in order
 
-tests/
-
-configs/
-notebooks/
+tests/       7 test modules covering the API, features, hashing, prediction, RAG eval, Spark harmonization, and training
+configs/     model_config.yaml (target variable, split fraction, XGBoost params)
+notebooks/   Exploratory data checks, model evaluation, RAG demo
 
 data/
- ├── raw/
- │    ├── onc/
- │    └── noaa/
- ├── bronze/
- ├── silver/
- ├── gold/
- └── manifests/
+ ├── raw/onc/, raw/noaa/   Source NetCDF files (not tracked in git)
+ ├── bronze/               Extracted observations + metadata + per-file SHA256 manifest
+ ├── silver/               Harmonized: canonical variable names, normalized units
+ ├── gold/                 Feature table used for training
+ ├── manifests/            source_manifest.jsonl
+ └── index/                Persisted FAISS index (when VECTOR_BACKEND=faiss)
 
-artifacts/
-
+artifacts/   MLflow runs, saved models, evaluation reports (tracked in git)
 streamlit_app.py
 docker-compose.yml
-README.md
-requirements.txt
 ```
 
 ---
 
-# Tech Stack
+## Tech stack
 
-* Python 3.11
-* Apache Spark
-* XGBoost
-* Optuna
-* FastAPI
-* Streamlit
-* Sentence Transformers
-* Qdrant / FAISS
-* Ollama
-* MLflow
-* Docker
+Python 3.11, Apache Spark, XGBoost, Optuna, MLflow, FastAPI, Streamlit,
+Sentence Transformers, Qdrant (default) or FAISS, Ollama, Docker.
 
 ---
 
-# Results
+## Data
 
-## Forecasting Metrics
+Two providers, six NetCDF files, ~10.8M raw observations after ingestion:
 
-| Metric | Baseline | Tuned   |
-| ------ | -------- | ------- |
-| RMSE   | 0.00612  | 0.00585 |
-| MAE    | 0.00480  | 0.00453 |
-| R²    | 0.99990  | 0.99991 |
+| Provider | Variable | File | Rows |
+|---|---|---|---|
+| ONC | Dissolved oxygen | `onc_oxygen.nc` | 3,552,866 |
+| ONC | Salinity | `onc_salinity.nc` | 3,547,928 |
+| ONC | Temperature (K) | `onc_temperature.nc` | 3,547,928 |
+| NOAA | Sea surface temperature (°C) | `noaa_sst.nc` | 145,152 |
+| NOAA | Barometric pressure | `noaa_pressure.nc` | 75 |
+| NOAA | Wind speed | `noaa_wind.nc` | 145 |
 
-## RAG Retrieval
+The forecaster targets sea water temperature specifically, combining the
+ONC and NOAA temperature series (harmonized to a common `degC` unit) into
+one 3,693,068-row feature table spanning 2021-05-05 to 2021-06-15. The
+other three variables flow through ingestion and harmonization and are
+searchable via `/search` and `/ask`, but are not part of the forecasting
+target.
 
-* hit@k: 1.0
-* term recall: 0.875
-
----
-
-# Model Interpretation
-
-High accuracy is expected because ocean temperature data is:
-
-* temporally smooth
-* highly autocorrelated
-
-Lag-based features (`lag_1`, `lag_3`, `lag_6`) provide strong predictive signal.
-
-A chronological train/test split is used to prevent leakage.
+Every raw file is SHA256-hashed on ingestion (`app/ingestion/hashing.py`)
+and recorded in `data/manifests/source_manifest.jsonl`, so `/provenance`
+can trace any prediction or document back to the exact source file it came
+from.
 
 ---
 
-# Limitations
+## Environment setup
 
-* short-term forecasting only
-* same-region data
-* limited RAG evaluation dataset
-* local deployment
-
----
-
-# Prerequisites
-
-Install:
-
-* Python 3.11
-* Docker
-* Ollama
-* Java (required for Spark)
-
----
-
-# Install Ollama
-
-Download:
-
-```
-https://ollama.com/download
-```
-
-Pull model:
-
-```
-ollama pull llama3
-```
-
----
-
-# Environment Setup
-
-Create virtual environment:
-
-```
+```bash
 py -3.11 -m venv .venv
-```
-
-Activate:
-
-Windows:
-
-```
-.\.venv\Scripts\activate
-```
-
-Mac/Linux:
-
-```
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```
+.\.venv\Scripts\activate       # Windows
+source .venv/bin/activate      # Mac/Linux
 pip install -r requirements.txt
 ```
-
----
-
-# Environment Variables
 
 Create `.env`:
 
@@ -262,109 +262,35 @@ QDRANT_COLLECTION=ocean_metadata
 MLFLOW_TRACKING_URI=./artifacts/mlruns
 ```
 
----
-
-# Start Required Services
-
-Start Qdrant:
-
-```
-docker compose up -d qdrant
-```
-
-Open dashboard:
-
-```
-http://localhost:6333/dashboard
-```
-
-Start Ollama:
-
-```
-ollama run llama3
-```
+Also requires Docker (for Qdrant), Ollama (`ollama pull llama3`), and a
+Java runtime (for Spark).
 
 ---
 
-# Run Full Pipeline
+## Running it
 
-```
+```bash
+docker compose up -d qdrant       # vector store
+ollama run llama3                 # local LLM for /ask
 python -m scripts.run_full_pipeline
+uvicorn app.main:app              # http://127.0.0.1:8000/docs
+streamlit run streamlit_app.py    # http://localhost:8501, separate terminal
 ```
+
+API endpoints: `/health`, `/predict`, `/metrics`, `/search`, `/ask`,
+`/provenance/{variable}`, `/eval/retrieval`.
+
+Tests: `python -m pytest -q`.
+
+To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
+`data/gold/`, `data/manifests/`, `data/index/`, `artifacts/`, then rerun
+`python -m scripts.run_full_pipeline`.
 
 ---
 
-# Start the API
+## Limitations
 
-```
-uvicorn app.main:app
-```
-
-Open API docs in browser:
-
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-# Start Streamlit Demo (separate terminal)
-
-Run:
-
-```
-streamlit run streamlit_app.py
-```
-
-Open:
-
-```
-http://localhost:8501
-```
-
----
-
-# API Endpoints
-
-* `/health` → service check
-* `/predict` → temperature forecasting
-* `/metrics` → model + RAG metrics
-* `/search` → vector search
-* `/ask` → RAG question answering
-* `/provenance/{variable}` → data lineage
-* `/eval/retrieval` → retrieval evaluation
-
-All endpoints can be tested via:
-
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-# Run Tests
-
-```
-python -m pytest -q
-```
-
----
-
-# Reset and Re-run
-
-Delete:
-
-```
-data/bronze/
-data/gold/
-data/index/
-data/manifests/
-data/silver/
-artifacts/
-```
-
-Then rerun:
-
-```
-python -m scripts.run_full_pipeline
-```
+- Short-horizon forecasting only (`lag_1`/`lag_3`/`lag_6`, no true multi-step forecast horizon).
+- One region, six weeks of data — no test of generalization across seasons or locations.
+- RAG evaluation is 4 hand-written queries, not a held-out benchmark.
+- Single-machine Spark (`local[*]`), not a real cluster.

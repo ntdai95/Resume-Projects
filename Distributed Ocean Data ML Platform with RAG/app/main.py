@@ -1,6 +1,5 @@
-from contextlib import asynccontextmanager
 import torch
-from sentence_transformers import SentenceTransformer
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.routes_ask import router as ask_router
 from app.api.routes_eval import router as eval_router
