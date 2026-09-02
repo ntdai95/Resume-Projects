@@ -35,7 +35,7 @@ def _load_model_package():
 def predict(payload: PredictRequest):
     package = _load_model_package()
     model = package["model"]
-    feature_cols = package.get("feature_cols") or package.get("features")
+    feature_cols = package.get("feature_cols")
     if not feature_cols:
         raise HTTPException(status_code=500, detail="Model package missing feature columns.")
 

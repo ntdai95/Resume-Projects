@@ -197,10 +197,14 @@ retriever's context look wrong to anyone who read it closely.
 
 ## Bugs found and fixed while building this
 
-The pipeline runs clean now, but it didn't when this pass started. Four
-bugs were serious enough to invalidate the numbers above if left in place,
-and are worth documenting because none of them threw an error — the code
-ran, produced plausible-looking metrics, and was wrong.
+The pipeline runs clean now, but it didn't when this pass started. Seven
+issues are worth documenting, and none of them threw an error at the point
+they were introduced — the code ran, produced plausible-looking output,
+and was wrong. Three invalidated the headline numbers directly; the other
+four didn't touch a reported number but broke something a caller would
+actually hit: the live `/predict` endpoint, the RAG benchmark step, a
+`/metrics` endpoint that quietly contradicted `/predict`, and `/ask`
+itself under the documented Docker setup.
 
 **Target leakage via the raw pre-normalization value.** The feature table
 included both `value` (the raw measurement, e.g. degrees Kelvin) and the
@@ -262,6 +266,27 @@ benchmark step specifically because `app.rag.evaluation` imports mlflow
 before anything imports the embedding model. Fixed by importing `torch`
 first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
 `app/retrieval/embedder.py`.
+
+**Two endpoints, two different answers to "how accurate is the model."**
+`/predict` loads whichever model file exists preferentially -- the tuned
+one, RMSE 0.0071 -- but `/metrics` read only the static report the
+baseline training script writes (RMSE 0.0117). Hitting both endpoints on
+the same running service returned two different numbers for what a caller
+would reasonably assume is one fact. Found the same way as the fifth
+issue: by calling the running service, not by reading the code. Fixed by
+having `/metrics` report both numbers, labeled `baseline` and `tuned`,
+rather than silently exposing only one.
+
+**`/ask` was completely broken under `docker compose up`.** Ollama runs
+directly on the host, not as a compose service, and the API container
+defaulted to `OLLAMA_BASE_URL=http://localhost:11434` -- inside a
+container, `localhost` means the container itself, not the host machine.
+Every `/ask` call failed with a connection-refused error. `/predict` and
+`/search` never touch Ollama, so they worked fine and hid the problem
+until `/ask` was actually called through the container. Fixed by pointing
+the api service at `http://host.docker.internal:11434`, with the
+`extra_hosts: host-gateway` mapping Linux needs for that hostname to
+resolve (Docker Desktop provides it natively on Windows/Mac).
 
 ---
 

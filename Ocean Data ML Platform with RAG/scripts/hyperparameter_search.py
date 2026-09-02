@@ -80,7 +80,7 @@ def main():
         metrics = {"mae": float(mean_absolute_error(y_test, preds)), "rmse": float(root_mean_squared_error(y_test, preds)),
                    "r2": float(r2_score(y_test, preds))}
 
-        model_package = {"model": best_model, "features": feature_cols, "best_params": best_params, "metrics": metrics}
+        model_package = {"model": best_model, "feature_cols": feature_cols, "best_params": best_params, "metrics": metrics}
         Path(model_out).parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(model_package, model_out)
         payload = {"best_params": best_params, "metrics": metrics, "best_value": study.best_value, "n_trials": len(study.trials),
