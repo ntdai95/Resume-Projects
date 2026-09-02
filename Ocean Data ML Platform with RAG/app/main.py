@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Ocean ML RAG", lifespan=lifespan)
+app = FastAPI(title="Ocean Data ML Platform with RAG", lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(search_router)
 app.include_router(ask_router)
