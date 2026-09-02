@@ -3,7 +3,6 @@ uvicorn[standard]==0.30.6
 pyspark==3.5.2
 xarray==2024.7.0
 netCDF4==1.7.1
-zarr==2.18.2
 pandas==2.2.2
 numpy==1.26.4
 pyyaml==6.0.2

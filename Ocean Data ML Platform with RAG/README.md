@@ -197,14 +197,15 @@ retriever's context look wrong to anyone who read it closely.
 
 ## Bugs found and fixed while building this
 
-The pipeline runs clean now, but it didn't when this pass started. Seven
+The pipeline runs clean now, but it didn't when this pass started. Eight
 issues are worth documenting, and none of them threw an error at the point
 they were introduced — the code ran, produced plausible-looking output,
 and was wrong. Three invalidated the headline numbers directly; the other
-four didn't touch a reported number but broke something a caller would
+five didn't touch a reported number but broke something a caller would
 actually hit: the live `/predict` endpoint, the RAG benchmark step, a
-`/metrics` endpoint that quietly contradicted `/predict`, and `/ask`
-itself under the documented Docker setup.
+`/metrics` endpoint that quietly contradicted `/predict`, `/ask` itself
+under the documented Docker setup, and a live `/eval/retrieval` endpoint
+that quietly disagreed with the number published everywhere else.
 
 **Target leakage via the raw pre-normalization value.** The feature table
 included both `value` (the raw measurement, e.g. degrees Kelvin) and the
@@ -287,6 +288,28 @@ until `/ask` was actually called through the container. Fixed by pointing
 the api service at `http://host.docker.internal:11434`, with the
 `extra_hosts: host-gateway` mapping Linux needs for that hostname to
 resolve (Docker Desktop provides it natively on Windows/Mac).
+
+**The fix to the RAG eval's `top_k` only reached the script, not the API.**
+The "corpus is small, `top_k=5` returns half of it regardless of
+relevance" fix earlier in this README was applied to
+`scripts/run_rag_benchmark.py`, but the live `POST /eval/retrieval`
+endpoint hardcoded its own default of 5 directly in the route rather than
+reading `settings.rag_eval_top_k`. Calling the documented endpoint with no
+arguments — exactly as a caller would — returned hit@k 1.0, term recall
+1.0: the identical suspiciously-perfect score this README already
+explains is a construction artifact, quietly reintroduced in a second
+place. Found by calling the live endpoint, not by re-reading the script I'd
+already fixed. Fixed by pointing the route's default at the same setting
+the script uses, so there's one source of truth instead of two.
+
+While checking the retrieval path I also confirmed the FAISS backend
+(the non-default `VECTOR_BACKEND=faiss` option) actually works end to
+end, but `index_builder.py` called `FaissStore.save()` on every startup
+to a path nothing ever reads back — `FaissStore` has no `load()` method,
+and the index is always rebuilt from scratch on startup regardless of
+backend. Not a correctness bug (search results were fine), but a
+"persisted index" that persisted nothing. Removed the pointless save call
+and the README line that described it as persistence.
 
 ---
 
@@ -372,8 +395,7 @@ data/
  ├── bronze/               Extracted observations + metadata + per-file SHA256 manifest
  ├── silver/               Harmonized: canonical variable names, normalized units
  ├── gold/                 Feature table used for training
- ├── manifests/            source_manifest.jsonl
- └── index/                Persisted FAISS index (when VECTOR_BACKEND=faiss)
+ └── manifests/            source_manifest.jsonl
 
 artifacts/   MLflow runs, saved models, evaluation reports (tracked in git)
 streamlit_app.py

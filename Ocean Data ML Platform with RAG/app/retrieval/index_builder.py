@@ -20,5 +20,4 @@ def build_index(docs, model_name):
     
     store = FaissStore(dim=embeddings.shape[1])
     store.add(embeddings, meta)
-    store.save("data/index/faiss.index", "data/index/faiss_meta.pkl")
     return store

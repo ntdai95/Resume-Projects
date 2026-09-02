@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query, Request
+from app.core.settings import settings
 from app.rag.evaluation import evaluate_retriever, save_retrieval_eval
 
 
 router = APIRouter(prefix="/eval", tags=["evaluation"])
 
 @router.post("/retrieval")
-def run_retrieval_eval(request: Request, top_k: int = Query(default=5, ge=1, le=20)):
+def run_retrieval_eval(request: Request, top_k: int = Query(default=settings.rag_eval_top_k, ge=1, le=20)):
     retriever = getattr(request.app.state, "retriever", None)
     if retriever is None:
         raise HTTPException(status_code=500, detail="Retriever not initialized")

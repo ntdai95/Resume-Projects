@@ -3,6 +3,7 @@ import streamlit as st
 
 
 API = "http://127.0.0.1:8000"
+st.set_page_config(page_title="Ocean Data ML Platform with RAG")
 st.title("Ocean Data ML Platform with RAG")
 tab1, tab2, tab3 = st.tabs(["Forecast", "Search", "Ask"])
 with tab1:
