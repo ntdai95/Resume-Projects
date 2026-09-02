@@ -1,4 +1,4 @@
-# Distributed Ocean Data ML Platform with RAG
+# Ocean Data ML Platform with RAG
 
 An end-to-end pipeline that ingests raw NetCDF ocean sensor data from two
 independent providers, harmonizes it with Apache Spark, trains an XGBoost
