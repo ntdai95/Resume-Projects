@@ -20,14 +20,14 @@ uvicorn app.main:app
 | Model | RMSE | MAE | R² |
 |---|---|---|---|
 | Naive persistence (predict = previous reading) | **0.00442** | **0.00198** | **0.99990** |
-| XGBoost, default params | 0.00823 | 0.00628 | 0.99967 |
-| XGBoost, tuned (Optuna, 25 trials) | 0.00715 | 0.00538 | 0.99975 |
+| XGBoost, default params | 0.01172 | 0.00871 | 0.99932 |
+| XGBoost, tuned (Optuna, 25 trials) | 0.00710 | 0.00527 | 0.99975 |
 
-Tuning closes about 13% of the gap over the default model, but neither
-XGBoost run beats the trivial baseline of repeating the last reading. **Read
-this alongside the caveat below** — an R² of 0.9997 looks like a strong
-forecaster in isolation, and only looks ordinary once it's checked against a
-model that learns nothing at all.
+Tuning cuts RMSE by about 39% over the default model, but neither XGBoost
+run beats the trivial baseline of repeating the last reading. **Read this
+alongside the caveat below** — an R² of 0.9997 looks like a strong forecaster
+in isolation, and only looks ordinary once it's checked against a model that
+learns nothing at all.
 
 ---
 
@@ -197,7 +197,7 @@ retriever's context look wrong to anyone who read it closely.
 
 ## Bugs found and fixed while building this
 
-The pipeline runs clean now, but it didn't when this pass started. Three
+The pipeline runs clean now, but it didn't when this pass started. Four
 bugs were serious enough to invalidate the numbers above if left in place,
 and are worth documenting because none of them threw an error — the code
 ran, produced plausible-looking metrics, and was wrong.
@@ -231,7 +231,31 @@ in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
 generalizing the Celsius/Kelvin normalization so a value already in Celsius
 is relabeled rather than double-converted.
 
-A fourth issue was environmental rather than a data bug: on Windows,
+**Latitude and longitude as an accidental provider label.** The gold table
+combines ONC's Pacific Northwest site (one fixed coordinate) with NOAA's
+sea-surface temperature site (a different fixed coordinate, thousands of
+kilometers away in the U.S. Virgin Islands) into a single feature table,
+and neither `latitude` nor `longitude` was ever excluded from the model's
+features. Because the chronological split puts the entire test set inside
+one slice of ONC's own history (NOAA's rows sort earlier and land
+entirely in training), those two columns carried 94% of the trained
+model's feature importance — not because location predicts ocean
+temperature in any generalizable way, but because they perfectly encode
+which provider produced a row, and the two providers have very different
+baseline temperatures. This didn't corrupt the reported test metric,
+since every test row shares the same fixed ONC coordinate and the split
+is a no-op there, but it broke the live system: `/predict` has no way to
+accept a location, so it silently evaluated every request at
+`latitude=0, longitude=0` — a point the model never saw in training — and
+returned nonsense (27.9°C from inputs around 12.4°C). Found by calling the
+deployed endpoint, not by reading the code. Fixed by excluding `latitude`
+and `longitude` from the feature columns in both `app/ml/train.py` and
+`scripts/hyperparameter_search.py` and retraining: the tuned model's RMSE
+is essentially unchanged (0.0071 either way), but the untuned
+default-params baseline moved from 0.00823 to 0.01172 once it lost the
+shortcut.
+
+A fifth issue was environmental rather than a data bug: on Windows,
 importing `mlflow` before `torch` in the same process leaves torch's
 `c10.dll` unable to initialize (`WinError 1114`), which broke the RAG
 benchmark step specifically because `app.rag.evaluation` imports mlflow
