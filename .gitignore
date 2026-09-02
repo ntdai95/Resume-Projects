@@ -18,6 +18,10 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
+# Editors
+.vscode/
+.idea/
+
 # OS
 .DS_Store
 Thumbs.db
