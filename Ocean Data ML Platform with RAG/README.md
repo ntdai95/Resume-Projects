@@ -537,7 +537,7 @@ To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 
 ## Limitations
 
-- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real skill at 3-12 hour horizons — see above — but that comparison isn't wired into the API.)
+- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real forecasting skill at 3-12 hour horizons — see above — but that comparison isn't wired into the API.)
 - One region, six weeks of data for the core ocean pipeline — no test of generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
 - RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark — see the caveats in the RAG retrieval section above.
 - Single-machine Spark (`local[*]`), not a real cluster.
