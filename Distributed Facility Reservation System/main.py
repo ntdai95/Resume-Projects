@@ -1,13 +1,27 @@
 from uuid import uuid4
 from fastapi import FastAPI
 from typing import Optional, Union, Dict, Any
-from pydantic import BaseSettings, BaseModel
+from pydantic import BaseModel
+
+# Pydantic 2 moved BaseSettings into a separate package. Keep the original
+# settings behaviour while remaining runnable with both Pydantic generations.
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    try:
+        from pydantic.v1 import BaseSettings
+    except ImportError:
+        from pydantic import BaseSettings
 from datetime import datetime, timezone, timedelta
-from pydantic.types import Json
 import reservation
 import json
 import random
 import hashlib
+
+# The original project used pydantic.types.Json as a return annotation. Modern
+# FastAPI interprets that as "a JSON-encoded string" and rejects normal dict
+# responses. These endpoints intentionally return mixed JSON objects/lists.
+Json = Any
 
 
 global client_login, manager_registration, environment
@@ -174,7 +188,7 @@ async def hold_post(hold: Hold):
     Returns:
         json with success and facility info
     """
-    args = hold.dict()
+    args = hold.model_dump() if hasattr(hold, "model_dump") else hold.dict()
     if args['request'].startswith("workshop"):
         request = args['request']
     elif args['request'] == "polymer extruder1":

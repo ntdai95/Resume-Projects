@@ -60,7 +60,10 @@ def train_xgboost_from_parquet(parquet_path: str, model_out: str, config_path: s
 
         Path(model_out).parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(model_package, model_out)
-        mlflow.xgboost.log_model(model, artifact_path="model")
+        # Log the native booster rather than the sklearn wrapper. This keeps
+        # MLflow logging compatible across sklearn releases while the joblib
+        # package above retains the fitted XGBRegressor used by the service.
+        mlflow.xgboost.log_model(model.get_booster(), artifact_path="model")
 
     details = {"feature_cols": feature_cols, "feature_importance": feature_importance, "y_test": y_test.tolist(),
                "preds": preds.tolist()}

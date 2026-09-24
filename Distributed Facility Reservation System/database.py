@@ -12,7 +12,10 @@ class Database:
     """
     def __init__(self, name: str):
         self.name = name
-        self.conn = sqlite3.connect("{}.db".format(name))
+        # FastAPI executes synchronous endpoints in worker threads. SQLite's
+        # default thread guard rejects that otherwise-safe access pattern, so
+        # allow the application-level Database instance to serve those calls.
+        self.conn = sqlite3.connect("{}.db".format(name), check_same_thread=False)
         self.create_tables(self.conn)
 
     #######################

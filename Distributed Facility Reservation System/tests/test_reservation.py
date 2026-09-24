@@ -1,10 +1,19 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from database import Database
 from reservation import Program
 
 
 db = Database("tests/testing")
+db.create_tables(db.conn, drop=True)
 program = Program(db)
+
+
+def future_weekday(days_ahead=21):
+    """Return a stable future weekday for discount and refund tests."""
+    candidate = date.today() + timedelta(days=days_ahead)
+    while candidate.weekday() >= 5:
+        candidate += timedelta(days=1)
+    return candidate.isoformat()
 
 
 def test_check_db_for_reservation_machine1():
@@ -70,7 +79,7 @@ def test_check_machine_res_valid_fail():
 def test_make_machine_reservation_success():
     machine = "harvest"
     cust_id = 1
-    reservation_date = "2022-05-12"
+    reservation_date = future_weekday()
     start_time = "11:00"
     end_time = "13:00"
     result = program.make_machine_reservation(machine, cust_id, reservation_date, start_time, end_time)
@@ -81,7 +90,7 @@ def test_make_machine_reservation_success():
 def test_make_machine_reservation_fail():
     machine = "harvest"
     cust_id = 1
-    reservation_date = "2022-05-12"
+    reservation_date = future_weekday()
     start_time = "11:00"
     end_time = "13:00"
     result = program.make_machine_reservation(machine, cust_id, reservation_date, start_time, end_time)
@@ -200,7 +209,7 @@ def test_calculate_downpayment_harvest():
 def test_make_workshop_reservation():
     workshop_number = 1
     cust_id = 2
-    reservation_date = "2022-05-12"
+    reservation_date = future_weekday()
     start_time = "13:00"
     end_time = "14:00"
     result = program.make_workshop_reservation(workshop_number, cust_id, reservation_date, start_time, end_time)
@@ -211,7 +220,7 @@ def test_make_workshop_reservation():
 def test_make_workshop_reservation_fail():
     workshop_number = 1
     cust_id = 2
-    reservation_date = "2022-05-12"
+    reservation_date = future_weekday()
     start_time = "13:00"
     end_time = "14:00"
     result = program.make_workshop_reservation(workshop_number, cust_id, reservation_date, start_time, end_time)
@@ -220,7 +229,7 @@ def test_make_workshop_reservation_fail():
 
 
 def test_cancel_reservation():
-    info = program.make_workshop_reservation(1, 1, "2022-05-06", "13:00", "14:00")
+    info = program.make_workshop_reservation(1, 1, future_weekday(35), "13:00", "14:00")
     result = program.cancel_reservation(info["reservation_id"])
     assert result["reservation_id"] == info["reservation_id"]
     assert result["refund"] == 27.84375

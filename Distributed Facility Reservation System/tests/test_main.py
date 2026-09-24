@@ -1,15 +1,33 @@
 import json
 import pytest
 import main
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 from fastapi.testclient import TestClient
+from database import Database
+from reservation import Program
 
 
+main.db = Database("tests/testing_main")
+main.db.create_tables(main.db.conn, drop=True)
+main.program = Program(main.db)
 client = TestClient(main.app)
 # inject manager session for testing
 t_session = str(uuid4())
 main.sessions[t_session] = [datetime.today(), 'manager']
+
+
+def future_weekday(days_ahead):
+    candidate = date.today() + timedelta(days=days_ahead)
+    while candidate.weekday() >= 5:
+        candidate += timedelta(days=1)
+    return candidate
+
+
+RESERVATION_DATE_1 = future_weekday(7)
+RESERVATION_DATE_2 = future_weekday(8)
+RESERVATION_RANGE_START = (date.today() + timedelta(days=1)).isoformat()
+RESERVATION_RANGE_END = (date.today() + timedelta(days=30)).isoformat()
 
 
 def test_load_config():
@@ -76,7 +94,7 @@ def test_hold_post_error(data, response):
 @pytest.mark.parametrize("data, response", [
     (
             {'customer_id': '1',
-             'reservation_date': '2021-10-05',
+             'reservation_date': RESERVATION_DATE_1.isoformat(),
              'thing_to_reserve': 'workshop1',
              'start_time': '12:30',
              'end_time': '13:30'},
@@ -107,7 +125,7 @@ def test_post_reservations(data, response):
 @pytest.mark.parametrize("data, response", [
     (
             {'customer_id': '2',
-             'reservation_date': '2022-02-03',
+             'reservation_date': RESERVATION_DATE_2.isoformat(),
              'thing_to_reserve': 'microv1',
              'start_time': '14:00',
              'end_time': '15:00',
@@ -127,8 +145,8 @@ def test_post_reservations1(data, response):
     result = client.post(url, params=params)
     # client.delete(url, params={"reservation_id": result.json()["reservation_id"], "session": t_session})
 
-    total_cost = 1500.0
-    down_payment = 750.0
+    total_cost = 2000.0
+    down_payment = 1000.0
 
     assert result.status_code == response
     assert result.json()['total_cost'] == total_cost
@@ -138,7 +156,7 @@ def test_post_reservations1(data, response):
 @pytest.mark.parametrize("data, response", [
     (
             {'customer_id': '1',
-             'reservation_date': '2022-01-07',
+             'reservation_date': RESERVATION_DATE_1.isoformat(),
              'thing_to_reserve': 'asdf',
              'start_time': '11:30',
              'end_time': '13:30'},
@@ -166,7 +184,7 @@ def test_post_reservations_error(data, response):
 @pytest.mark.parametrize("data, response", [
     (
             {'customer_id': '1',
-             'reservation_date': '2022-01-07',
+             'reservation_date': RESERVATION_DATE_1.isoformat(),
              'thing_to_reserve': 'workshop16',
              'start_time': '11:30',
              'end_time': '13:30'},
@@ -254,13 +272,15 @@ def test_get_reservations1():
 
 
 def test_get_reservations2():
-    parameters = {"end": "2022-02-27", "start": "2022-01-01", 'session': t_session}
+    parameters = {"end": RESERVATION_RANGE_END, "start": RESERVATION_RANGE_START, 'session': t_session}
     response = client.get('http://localhost:51225/v1/reservations/', params=parameters)
 
     print("---get reservation --- ")
     print(response.status_code)
     print(response.json())
-    assert len(json.loads(response.json())) == 2
+    reservations = json.loads(response.json())
+    assert len(reservations) == 4
+    assert len({row[0] for row in reservations}) == 2
     assert response.status_code == 200
 
 
@@ -273,7 +293,7 @@ def test_delete_reservation():
 
 
 def test_get_transactions():
-    parameters = {"end": '2022-03-30', "start": '2021-06-01', 'session': t_session}
+    parameters = {"end": RESERVATION_RANGE_END, "start": RESERVATION_RANGE_START, 'session': t_session}
     response = client.get('http://localhost:51225/v1/transactions/',
                           params=parameters)
     print("---get transactions --- ")
