@@ -552,226 +552,69 @@ To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 
 ## Demo
 
-Every response below is a real response captured from a local run, not a sketch of
-one. Bring the stack up first:
+Every screenshot below is the running service, executed through its own Swagger UI at
+`http://localhost:8000/docs`. Bring it up with:
 
 ```bash
 docker compose up -d          # API on :8000, Qdrant on :6333
 ```
 
-`/ask` additionally needs Ollama running on the host with the `llama3` model pulled;
-the compose file points the container at `host.docker.internal:11434`. Long arrays in
-the responses below are cut where marked.
+`/ask` additionally needs Ollama on the host with the `llama3` model pulled; the compose
+file points the container at `host.docker.internal:11434`.
+
+### The API surface
+
+Eight endpoints, self-documenting through FastAPI's generated OpenAPI schema.
+
+![The API surface](docs/demo/00_overview.png)
 
 ### `GET /health`
 
 Liveness check. Returns once the RAG runtime has finished loading on startup.
 
-```bash
-curl -s localhost:8000/health
-```
-
-```json
-{
-  "status": "ok"
-}
-```
+![GET /health](docs/demo/health.png)
 
 ### `GET /provenance/{variable}`
 
-The lineage answer, and the clearest demonstration of what harmonization actually did: two providers used two different names for the same quantity, and both rows record the transform that mapped them onto one canonical variable.
+The lineage answer, and the clearest demonstration of what harmonization did: ONC called it `Temperature` in `onc_temperature.nc`, NOAA called it `TEMP_C` in `noaa_sst.nc`, and both rows record the transform that mapped them onto one canonical variable. Resolved across 10.79M rows in the silver table.
 
-```bash
-curl -s localhost:8000/provenance/sea_water_temperature
-```
-
-```json
-{
-  "target_variable": "sea_water_temperature",
-  "rows": [
-    {
-      "dataset_id": "onc",
-      "source_file": "data\\raw\\onc\\onc_temperature.nc",
-      "source_variable": "Temperature",
-      "canonical_variable": "sea_water_temperature",
-      "provenance_transform": "canonicalize_and_normalize"
-    },
-    {
-      "dataset_id": "noaa",
-      "source_file": "data\\raw\\noaa\\noaa_sst.nc",
-      "source_variable": "TEMP_C",
-      "canonical_variable": "sea_water_temperature",
-      "provenance_transform": "canonicalize_and_normalize"
-    }
-  ]
-}
-```
+![GET /provenance/{variable}](docs/demo/provenance.png)
 
 ### `GET /search`
 
-Dense retrieval over the indexed metadata and reports, scored by cosine similarity. The `metadata` mirror on each hit is omitted here for readability.
+Dense retrieval over the indexed metadata and reports, scored by cosine similarity. All three hits are shown, each carrying its score, source file and the text that was matched.
 
-```bash
-curl -s "localhost:8000/search?q=how+was+water+temperature+harmonized&top_k=3"
-```
-
-```json
-{
-  "results": [
-    {
-      "score": 0.34613824,
-      "doc_id": "model-metrics",
-      "dataset_id": "model",
-      "source_file": "artifacts/reports/model_metrics.json",
-      "variable": "",
-      "chunk_id": "model-metrics:0",
-      "text": "Baseline XGBoost water temperature forecasting model metrics: {\n  \"rmse\": 0.011722360813755191,\n  \"mae\": 0.008708583885437708,\n  \"r2\": 0.9993227151746908\n}"
-    }
-  ]
-}
-// 3 results returned; first shown
-```
+![GET /search](docs/demo/search.png)
 
 ### `POST /ask`
 
-Retrieval-augmented answering. The response carries the generated answer **and** the chunks it was grounded in, so an answer can always be checked against its sources. Took about 40 seconds on CPU with `llama3`.
+Retrieval-augmented answering. The response carries the generated answer **and** every chunk it was grounded in, so the answer can be checked rather than trusted — and this one checks out: the three figures it reports are identical to what `GET /metrics` returns below. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
 
-```bash
-curl -s -X POST localhost:8000/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"question": "Which variables were harmonized and where did they come from?", "top_k": 3}'
-```
-
-```json
-{
-  "answer": "Based on the retrieved context, the variables that were harmonized are:\n\n* Temperature\n\nThe temperature variable was likely harmonized in the \"model\" dataset, specifically in the \"air_temperature_benchmark.json\" source file. This is because the \"air_temperature_benchmark.json\" file contains metrics such as \"r2\", \"rmse\", and \"mae\" that suggest a temperature-related dataset was evaluated.\n\nThere is no clear indication of harmonized variables in the \"noaa\" dataset, which appears to contain wind speed data.",
-  "retrieved": [
-    {
-      "score": 0.12651682,
-      "doc_id": "hyperparameter-search",
-      "dataset_id": "model",
-      "source_file": "artifacts/reports/hyperparameter_search.json",
-      "variable": "",
-      "chunk_id": "hyperparameter-search:1",
-      "text": ".007104802881246305,\n    \"r2\": 0.9997512029411845\n  },\n  \"best_value\": 0.007104802881246305,\n  \"n_trials\": 25,\n  \"model_path\": \"artifacts\\\\models\\\\temperature_forecaster_tuned.joblib\",\n  \"split_strategy\": \"chronological_holdout\"\n}"
-    }
-  ]
-}
-// 3 chunks retrieved; first shown
-```
+![POST /ask](docs/demo/ask.png)
 
 ### `POST /eval/retrieval`
 
-Scores the retriever against the held-out query set rather than trusting it, and writes the result to disk. Called with no arguments it uses the project's own default `top_k`, which is the setting the numbers quoted above were measured at. Raising `top_k` raises both metrics, so the default is the honest one to report.
+Scores the retriever against the held-out query set instead of assuming it works, and writes the result to disk. Called with no arguments, exactly as a caller would — which is the call that surfaced the hardcoded `top_k` bug written up above. Now that the route reads `settings.rag_eval_top_k`, it returns the same hit@k 0.9 and term recall 0.85 quoted at the top of this README rather than the 1.0 pair that used to come back.
 
-```bash
-curl -s -X POST localhost:8000/eval/retrieval
-```
-
-```json
-{
-  "message": "Retrieval evaluation completed",
-  "metrics": {
-    "hit_at_k": 0.9,
-    "term_recall": 0.85
-  },
-  "num_queries": 10,
-  "artifacts": {
-    "summary_path": "artifacts/reports/rag_eval_summary.json",
-    "rows_path": "artifacts/reports/rag_eval_rows.jsonl"
-  }
-}
-```
+![POST /eval/retrieval](docs/demo/eval_retrieval.png)
 
 ### `POST /predict`
 
-Single-point forecast from the tuned model. Lag features are supplied by the caller, which is what makes the persistence caveat above so visible: `lag_1` is most of the answer.
+Single-point forecast from the tuned model. The caller supplies the lag features, which is what makes the persistence caveat above so concrete: `lag_1` carries most of the answer.
 
-```bash
-curl -s -X POST localhost:8000/predict \
-  -H 'Content-Type: application/json' \
-  -d '{"hour": 14, "dayofyear": 196, "lag_1": 12.8, "lag_3": 12.6, "lag_6": 12.4}'
-```
-
-```json
-{
-  "prediction": 12.817583084106445,
-  "target": "sea_water_temperature",
-  "unit": "degC",
-  "features_used": [
-    "hour",
-    "dayofyear",
-    "lag_1",
-    "lag_3",
-    "lag_6"
-  ],
-  "input": {
-    "hour": 14,
-    "dayofyear": 196,
-    "lag_1": 12.8,
-    "lag_3": 12.6,
-    "lag_6": 12.4
-  },
-  "model_metrics": {
-    "mae": 0.005274209980795935,
-    "rmse": 0.007104802881246305,
-    "r2": 0.9997512029411845
-  }
-}
-```
+![POST /predict](docs/demo/predict.png)
 
 ### `GET /forecast`
 
 The stored evaluation report for the forecasting model, with the path of the artifact it describes.
 
-```bash
-curl -s localhost:8000/forecast
-```
-
-```json
-{
-  "message": "Forecasting model artifacts available",
-  "metrics": {
-    "rmse": 0.011722360813755191,
-    "mae": 0.008708583885437708,
-    "r2": 0.9993227151746908
-  },
-  "model_path": "artifacts/models/temperature_forecaster.joblib"
-}
-```
+![GET /forecast](docs/demo/forecast.png)
 
 ### `GET /metrics`
 
 Both halves of the system in one place: forecasting metrics and retrieval metrics.
 
-```bash
-curl -s localhost:8000/metrics
-```
-
-```json
-{
-  "forecasting": {
-    "baseline": {
-      "rmse": 0.011722360813755191,
-      "mae": 0.008708583885437708,
-      "r2": 0.9993227151746908
-    },
-    "tuned": {
-      "mae": 0.005274209980795935,
-      "rmse": 0.007104802881246305,
-      "r2": 0.9997512029411845
-    }
-  },
-  "retrieval": {
-    "num_queries": 10,
-    "top_k": 2,
-    "metrics": {
-      "hit_at_k": 0.9,
-      "term_recall": 0.85
-    }
-  }
-}
-```
+![GET /metrics](docs/demo/metrics.png)
 
 ---
 
