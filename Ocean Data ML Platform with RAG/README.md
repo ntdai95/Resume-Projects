@@ -29,6 +29,17 @@ alongside the caveat below** — an R² of 0.9997 looks like a strong forecaster
 in isolation, and only looks ordinary once it's checked against a model that
 learns nothing at all.
 
+<table>
+<tr>
+<td width="50%"><img src="artifacts/plots/prediction_vs_actual.png" alt="Predicted against actual water temperature on the held-out 20%"></td>
+<td width="50%"><img src="artifacts/plots/residuals.png" alt="Residual distribution for the tuned XGBoost model"></td>
+</tr>
+<tr>
+<td><em>Predicted against actual on the held-out final 20%.</em></td>
+<td><em>Residuals for the tuned model.</em></td>
+</tr>
+</table>
+
 ---
 
 ## The persistence-baseline caveat
@@ -93,6 +104,8 @@ period to overfit in the first place. Full numbers, including MAE and R²
 at every horizon, are in `artifacts/reports/horizon_experiment.json`; the
 error curve is plotted in `artifacts/plots/horizon_experiment.png`.
 
+![RMSE by forecast horizon](artifacts/plots/horizon_experiment.png)
+
 The practical conclusion: for this sensor, at these horizons, engineered
 features and multi-sensor context measurably hurt point-forecast accuracy
 rather than helping. That's a more useful result to publish than either
@@ -144,6 +157,8 @@ real physical relationship rather than fitting noise the training period
 won't repeat. Full metrics (RMSE, MAE, R² at every horizon) are in
 `artifacts/reports/air_temperature_benchmark.json`; the plot is
 `artifacts/plots/air_temperature_benchmark.png`.
+
+![Air temperature benchmark](artifacts/plots/air_temperature_benchmark.png)
 
 Together, the two experiments are the actual point: the same pipeline,
 unchanged, correctly finds no exploitable structure in one signal and real,
@@ -532,6 +547,231 @@ on first run — see the script for the source URL):
 To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 `data/gold/`, `data/manifests/`, `data/index/`, `artifacts/`, then rerun
 `python -m scripts.run_full_pipeline`.
+
+---
+
+## Demo
+
+Every response below is a real response captured from a local run, not a sketch of
+one. Bring the stack up first:
+
+```bash
+docker compose up -d          # API on :8000, Qdrant on :6333
+```
+
+`/ask` additionally needs Ollama running on the host with the `llama3` model pulled;
+the compose file points the container at `host.docker.internal:11434`. Long arrays in
+the responses below are cut where marked.
+
+### `GET /health`
+
+Liveness check. Returns once the RAG runtime has finished loading on startup.
+
+```bash
+curl -s localhost:8000/health
+```
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### `GET /provenance/{variable}`
+
+The lineage answer, and the clearest demonstration of what harmonization actually did: two providers used two different names for the same quantity, and both rows record the transform that mapped them onto one canonical variable.
+
+```bash
+curl -s localhost:8000/provenance/sea_water_temperature
+```
+
+```json
+{
+  "target_variable": "sea_water_temperature",
+  "rows": [
+    {
+      "dataset_id": "onc",
+      "source_file": "data\\raw\\onc\\onc_temperature.nc",
+      "source_variable": "Temperature",
+      "canonical_variable": "sea_water_temperature",
+      "provenance_transform": "canonicalize_and_normalize"
+    },
+    {
+      "dataset_id": "noaa",
+      "source_file": "data\\raw\\noaa\\noaa_sst.nc",
+      "source_variable": "TEMP_C",
+      "canonical_variable": "sea_water_temperature",
+      "provenance_transform": "canonicalize_and_normalize"
+    }
+  ]
+}
+```
+
+### `GET /search`
+
+Dense retrieval over the indexed metadata and reports, scored by cosine similarity. The `metadata` mirror on each hit is omitted here for readability.
+
+```bash
+curl -s "localhost:8000/search?q=how+was+water+temperature+harmonized&top_k=3"
+```
+
+```json
+{
+  "results": [
+    {
+      "score": 0.34613824,
+      "doc_id": "model-metrics",
+      "dataset_id": "model",
+      "source_file": "artifacts/reports/model_metrics.json",
+      "variable": "",
+      "chunk_id": "model-metrics:0",
+      "text": "Baseline XGBoost water temperature forecasting model metrics: {\n  \"rmse\": 0.011722360813755191,\n  \"mae\": 0.008708583885437708,\n  \"r2\": 0.9993227151746908\n}"
+    }
+  ]
+}
+// 3 results returned; first shown
+```
+
+### `POST /ask`
+
+Retrieval-augmented answering. The response carries the generated answer **and** the chunks it was grounded in, so an answer can always be checked against its sources. Took about 40 seconds on CPU with `llama3`.
+
+```bash
+curl -s -X POST localhost:8000/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "Which variables were harmonized and where did they come from?", "top_k": 3}'
+```
+
+```json
+{
+  "answer": "Based on the retrieved context, the variables that were harmonized are:\n\n* Temperature\n\nThe temperature variable was likely harmonized in the \"model\" dataset, specifically in the \"air_temperature_benchmark.json\" source file. This is because the \"air_temperature_benchmark.json\" file contains metrics such as \"r2\", \"rmse\", and \"mae\" that suggest a temperature-related dataset was evaluated.\n\nThere is no clear indication of harmonized variables in the \"noaa\" dataset, which appears to contain wind speed data.",
+  "retrieved": [
+    {
+      "score": 0.12651682,
+      "doc_id": "hyperparameter-search",
+      "dataset_id": "model",
+      "source_file": "artifacts/reports/hyperparameter_search.json",
+      "variable": "",
+      "chunk_id": "hyperparameter-search:1",
+      "text": ".007104802881246305,\n    \"r2\": 0.9997512029411845\n  },\n  \"best_value\": 0.007104802881246305,\n  \"n_trials\": 25,\n  \"model_path\": \"artifacts\\\\models\\\\temperature_forecaster_tuned.joblib\",\n  \"split_strategy\": \"chronological_holdout\"\n}"
+    }
+  ]
+}
+// 3 chunks retrieved; first shown
+```
+
+### `POST /eval/retrieval`
+
+Scores the retriever against the held-out query set rather than trusting it, and writes the result to disk. Called with no arguments it uses the project's own default `top_k`, which is the setting the numbers quoted above were measured at. Raising `top_k` raises both metrics, so the default is the honest one to report.
+
+```bash
+curl -s -X POST localhost:8000/eval/retrieval
+```
+
+```json
+{
+  "message": "Retrieval evaluation completed",
+  "metrics": {
+    "hit_at_k": 0.9,
+    "term_recall": 0.85
+  },
+  "num_queries": 10,
+  "artifacts": {
+    "summary_path": "artifacts/reports/rag_eval_summary.json",
+    "rows_path": "artifacts/reports/rag_eval_rows.jsonl"
+  }
+}
+```
+
+### `POST /predict`
+
+Single-point forecast from the tuned model. Lag features are supplied by the caller, which is what makes the persistence caveat above so visible: `lag_1` is most of the answer.
+
+```bash
+curl -s -X POST localhost:8000/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"hour": 14, "dayofyear": 196, "lag_1": 12.8, "lag_3": 12.6, "lag_6": 12.4}'
+```
+
+```json
+{
+  "prediction": 12.817583084106445,
+  "target": "sea_water_temperature",
+  "unit": "degC",
+  "features_used": [
+    "hour",
+    "dayofyear",
+    "lag_1",
+    "lag_3",
+    "lag_6"
+  ],
+  "input": {
+    "hour": 14,
+    "dayofyear": 196,
+    "lag_1": 12.8,
+    "lag_3": 12.6,
+    "lag_6": 12.4
+  },
+  "model_metrics": {
+    "mae": 0.005274209980795935,
+    "rmse": 0.007104802881246305,
+    "r2": 0.9997512029411845
+  }
+}
+```
+
+### `GET /forecast`
+
+The stored evaluation report for the forecasting model, with the path of the artifact it describes.
+
+```bash
+curl -s localhost:8000/forecast
+```
+
+```json
+{
+  "message": "Forecasting model artifacts available",
+  "metrics": {
+    "rmse": 0.011722360813755191,
+    "mae": 0.008708583885437708,
+    "r2": 0.9993227151746908
+  },
+  "model_path": "artifacts/models/temperature_forecaster.joblib"
+}
+```
+
+### `GET /metrics`
+
+Both halves of the system in one place: forecasting metrics and retrieval metrics.
+
+```bash
+curl -s localhost:8000/metrics
+```
+
+```json
+{
+  "forecasting": {
+    "baseline": {
+      "rmse": 0.011722360813755191,
+      "mae": 0.008708583885437708,
+      "r2": 0.9993227151746908
+    },
+    "tuned": {
+      "mae": 0.005274209980795935,
+      "rmse": 0.007104802881246305,
+      "r2": 0.9997512029411845
+    }
+  },
+  "retrieval": {
+    "num_queries": 10,
+    "top_k": 2,
+    "metrics": {
+      "hit_at_k": 0.9,
+      "term_recall": 0.85
+    }
+  }
+}
+```
 
 ---
 
