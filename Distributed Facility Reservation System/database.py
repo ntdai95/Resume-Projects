@@ -346,11 +346,27 @@ class Database:
             the amount of funds or 0
         """
         cursor = self.conn.cursor()
-        user_funds = cursor.execute("SELECT funds from users WHERE id = ?", (user_id,)).fetchone()[0]
-        if not user_funds:
+        row = cursor.execute("SELECT funds from users WHERE id = ?", (user_id,)).fetchone()
+        if not row or not row[0]:
             return 0
         else:
-            return float(user_funds)
+            return float(row[0])
+
+    def is_client_account(self, user_id: str) -> bool:
+        """Check an id belongs to a client account
+
+        Only client accounts hold funds, so only they are subject to the
+        balance rule when a reservation is made.
+
+        Args:
+            user_id: the id of the account to look for
+        Returns:
+            True when the row is present and is a client
+        """
+        cursor = self.conn.cursor()
+        row = cursor.execute(
+            "SELECT type from users WHERE id = ?", (user_id,)).fetchone()
+        return bool(row) and row[0] == "client"
 
     def post_user_funds(self, user_id: str, amount: str) -> float:
         """Post user funds

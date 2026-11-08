@@ -1,0 +1,17 @@
+# Usage: pip install -r requirements.txt
+
+# server
+fastapi >= 0.100
+uvicorn >= 0.23
+pydantic >= 2.0
+pydantic-settings >= 2.0
+python-dotenv >= 1.0
+pytz >= 2023.3
+
+# command line client
+requests >= 2.31
+pandas >= 2.0
+
+# tests
+pytest >= 7.4
+httpx >= 0.24

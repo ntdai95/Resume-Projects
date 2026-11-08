@@ -13,10 +13,17 @@ except ImportError:
     except ImportError:
         from pydantic import BaseSettings
 from datetime import datetime, timezone, timedelta
+from dotenv import load_dotenv
 import reservation
 import json
 import random
 import hashlib
+import smtplib
+import os
+
+load_dotenv()
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 # The original project used pydantic.types.Json as a return annotation. Modern
 # FastAPI interprets that as "a JSON-encoded string" and rejects normal dict
@@ -380,6 +387,16 @@ async def reservation_post(
             start_time,
             end_time
         )
+
+    # The customer must be able to cover the whole reservation, not just the
+    # down payment. Checking here keeps the rule true for every caller, since
+    # the booking contract is shared with other teams' clients.
+    if isinstance(result, dict) and "total_cost" in result and db.is_client_account(customer_id):
+        total_cost = float(result["total_cost"])
+        if db.get_user_funds(customer_id) < total_cost:
+            program.cancel_reservation(result["reservation_id"])
+            return {"message": "You do not have enough money to make this transaction"}
+
     return result
 
 @app.delete("/v1/reservations/")
@@ -538,7 +555,7 @@ async def update_password(user_id: str, new_pw: str, session: str):
     Returns:
         message: success or error
     """
-    if not _validate_session(session) and session != "Session Override":
+    if not _validate_session(session):
         return {"message": "Logout and log back in."}
     pwh = hashlib.sha256(new_pw.encode()).hexdigest()
     result = db.update_password(user_id, pwh)
@@ -546,6 +563,41 @@ async def update_password(user_id: str, new_pw: str, session: str):
         return {"message": "Password change successful", "success": 1}
     else:
         return {"message": "Something went wrong, try again"}
+
+@app.post("/v1/user/reset_password")
+async def reset_password(email: str) -> Dict[str, str]:
+    """Reset a forgotten password
+
+    Looks the account up by email address, sets a new temporary password, and
+    mails it out. The caller never supplies a user id or a password, so this
+    cannot be used to take over an account, and the reply is identical whether
+    or not the address is registered.
+
+    Args:
+        email: the email address on the account
+    Returns:
+        json with a message that does not reveal whether the address exists
+    """
+    reply = {"message": "If that address is registered, a temporary password has been sent to it."}
+    user = db.get_user_without_session(email)
+    if not user:
+        return reply
+
+    temp_pw = "".join([random.choice("abcdefghijklmnopqrstuvwxyz1234567890") for _ in range(12)])
+    db.update_password(user[0][0], hashlib.sha256(temp_pw.encode()).hexdigest())
+
+    if EMAIL_ADDRESS and EMAIL_PASSWORD:
+        subject = "Request to change your password!"
+        body = "Please, use the following id: {} and temporary password to change your old forgotten password: {}".format(user[0][2], temp_pw)
+        message = "Subject: {}\n\n{}".format(subject, body)
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.sendmail(EMAIL_ADDRESS, user[0][7], message)
+
+    return reply
 
 @app.post("/v1/client_login/")
 async def client_login_change(new_status: int, session: str):
@@ -577,10 +629,7 @@ async def get_user(user_id: str, session: str):
     Returns:
         json with the user info
     """
-    if session == "Session Override":
-        user = db.get_user_without_session(user_id)
-        return user
-    if not _validate_session(session) and session != "Session Override":
+    if not _validate_session(session):
         return {"message": "Logout and log back in."}
     user = db.get_user(user_id)
     return user

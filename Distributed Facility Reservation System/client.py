@@ -898,30 +898,9 @@ class client:
                 password_forgot = input("\nIf you forgot your username or password please type 'forgot', else type anything.\n")
                 if password_forgot.lower() == "forgot":
                     email = input("Please, enter your email address:\n")
-                    parameters = {"user_id": email, 'session': "Session Override"}
-                    response = requests.get(f'{self.base_url}/v1/user/', params=parameters)
-                    json_list = response.json()
-                    if json_list != []:
-                        temp_pass = "".join([random.choice("abcdefghijklmnopqrstuvwxyz1234567890") for _ in range(12)])
-                        parameters = {"user_id": json_list[0][0], "new_pw": temp_pass, "session": "Session Override"}
-                        response = requests.post(f'{self.base_url}/v1/user/update_password', params=parameters)
-                        if response.json()["message"] == "Password change successful":
-                            print("Old password updated to temporary password.")
-                            client_email = json_list[0][7]
-                            with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
-                                smtp.ehlo()
-                                smtp.starttls()
-                                smtp.ehlo()
-                                smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                                subject = 'Request to change your password!'
-                                body = "Please, use the following id: {} and temporary password to change your old forgotten password: {}".format(json_list[0][2], temp_pass)
-                                message = "Subject: {}\n\n{}".format(subject, body)
-                                smtp.sendmail(EMAIL_ADDRESS, client_email, message)
-                            print("\nYour user id and temporary password has been sent to your email address. Use that to change your old forgotten password.")
-                        else:
-                            print("\nSomething went wrong. Therefore, the old password has not been updated to the temporary password. Please, try login again.")
-                    else:
-                        print("No user with that email address found.")
+                    parameters = {"email": email}
+                    response = requests.post(f'{self.base_url}/v1/user/reset_password', params=parameters)
+                    print("\n" + response.json()["message"])
                 return
             elif response.json()["active"] == 1:
                 print("Login success! Hello {}".format(response.json()["user_id"]))
@@ -992,9 +971,8 @@ class client:
 
 if __name__ == "__main__":
     # deployed locally:
-    # client().program()
+    client().program()
 
-    # deployed url:
-    # http://linux5.cs.uchicago.edu
-    client(url='http://linux5.cs.uchicago.edu:51225').program()
+    # the course server this was originally deployed to is no longer running:
+    # client(url='http://linux5.cs.uchicago.edu:51225').program()
     
