@@ -1,31 +1,36 @@
 # Stock Sentiment Analysis
 
-An end-to-end quantitative data pipeline that integrates social media sentiment with financial time-series data to evaluate whether influencer-driven online discussions are associated with stock returns and market volatility.
+This project asks whether what financial influencers post on X lines up with how
+technology stocks move. It pairs tweet sentiment with daily price data, then tests the
+relationship with correlation, Granger causality and GARCH models. The short answer is
+that sentiment tracks same-day moves and says much more about volatility than it does
+about tomorrow's return.
 
-The system combines a hybrid database architecture (Neo4j + SQLite), financial NLP (FinTwitBERT), and econometric time-series analysis (correlation, Granger causality, and GARCH modeling) to study relationships between social sentiment and stock market behavior.
-
----
-
-## 🚀 System Overview
-
-The pipeline consists of four stages:
-
-1. **Data Collection**
-2. **Hybrid Data Storage**
-3. **Sentiment Modeling**
-4. **Statistical & Volatility Analysis**
-
-The entire workflow is reproducible and fully automated via Python scripts.
+The stack is a hybrid database (SQLite and Neo4j), financial NLP with FinTwitBERT and econometric time-series analysis in `statsmodels` and `arch`.
 
 ---
 
-## 📡 Data Collection
+## System overview
 
-Two primary data sources are used:
+The pipeline runs in four stages:
 
-### Influencer Tweets
+1. Data collection
+2. Hybrid data storage
+3. Sentiment modeling
+4. Statistical and volatility analysis
 
-Tweets are collected using the X (Twitter) API from major financial influencers, including:
+`main.py` runs all four in order, so the whole analysis reproduces from one command.
+
+---
+
+## Data collection
+
+There are two data sources.
+
+### Influencer tweets
+
+Tweets come from the X (Twitter) API, from six accounts that move financial
+conversation:
 
 * Elon Musk
 * Cathie Wood
@@ -34,11 +39,11 @@ Tweets are collected using the X (Twitter) API from major financial influencers,
 * Michael Burry
 * Donald Trump
 
-Tweets mentioning major technology stocks are retained and stored.
+Only the tweets that mention one of the tracked technology stocks are kept.
 
-### Stock Market Data
+### Stock market data
 
-Historical daily stock prices are downloaded using `yfinance` for major technology companies, including:
+Daily prices come from `yfinance` for ten technology companies:
 
 * NVIDIA
 * Apple
@@ -51,136 +56,131 @@ Historical daily stock prices are downloaded using `yfinance` for major technolo
 * Tesla
 * Tencent
 
-Price data include OHLC, adjusted close, and volume.
+Each row carries OHLC, adjusted close and volume.
 
 ---
 
-## 🗄 Hybrid Database Architecture
+## Hybrid database architecture
 
-The system uses two complementary storage systems:
+The two stores answer different questions, so the project uses both.
 
-### SQLite (Relational Storage)
+### SQLite (relational storage)
 
-Used for:
+SQLite holds the tables that get joined on a date:
 
 * Tweet content and metadata
-* Tweet–stock relationships
+* Tweet-to-stock relationships
 * Historical stock prices
 * Daily sentiment signals
 
-Relational storage enables efficient time-series joins and aggregation.
+Time-series joins and daily aggregation are what relational storage is good at, so
+everything the analysis reads lives here.
 
-### Neo4j (Graph Database)
+### Neo4j (graph database)
 
-Used to model influencer relationships:
+Neo4j holds the influencer relationships as a graph:
 
-<pre class="overflow-visible! px-0!" data-start="2124" data-end="2182"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-[calc(var(--sticky-padding-top)+9*var(--spacing))]"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>(Person) </span><span>--POSTED--</span><span>> (Tweet) </span><span>--MENTIONS--</span><span>> (Stock)
-</span></span></code></div></div></pre>
+```
+(Person) --POSTED--> (Tweet) --MENTIONS--> (Stock)
+```
 
-This allows exploration of influencer–stock networks and tweet propagation patterns.
+Walking that graph is how I look at which influencers talk about which stocks, and how
+a single tweet propagates.
 
 ---
 
-## 🧠 Sentiment Modeling
+## Sentiment modeling
 
-Tweet sentiment is computed using  **FinTwitBERT** , a financial sentiment model designed for Twitter-style financial text.
+Sentiment comes from **FinTwitBERT**, a sentiment model trained on financial
+Twitter-style text instead of general prose.
 
 ### Preprocessing
 
-Tweets are cleaned by:
+Each tweet is cleaned before it reaches the model:
 
-* Removing URLs and mentions
-* Normalizing text
-* Filtering to English tweets
+* URLs and mentions are removed
+* Text is normalized
+* Non-English tweets are dropped
 
-### Sentiment Score
+### Sentiment score
 
-Each tweet receives a sentiment score:
+Every tweet gets one score from the model's two class probabilities:
 
-<pre class="overflow-visible! px-0!" data-start="2604" data-end="2649"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-[calc(var(--sticky-padding-top)+9*var(--spacing))]"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>sentiment</span><span> = P(positive) − P(negative)
-</span></span></code></div></div></pre>
+```
+sentiment = P(positive) - P(negative)
+```
 
-### Daily Sentiment Aggregation
+### Daily sentiment aggregation
 
-Daily sentiment per stock is computed using engagement-weighted averaging:
+Daily sentiment per stock is an engagement-weighted average, so a tweet that more
+people actually saw counts for more:
 
-<pre class="overflow-visible! px-0!" data-start="2759" data-end="2802"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-[calc(var(--sticky-padding-top)+9*var(--spacing))]"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>weight</span><span> = </span><span>1</span><span> + retweets + </span><span>0.5</span><span> × likes
-</span></span></code></div></div></pre>
-
-This emphasizes tweets with higher market visibility.
-
----
-
-## 📊 Statistical Analysis Pipeline
-
-The following analyses are performed:
-
-### 1. Stationarity Tests
-
-Augmented Dickey-Fuller tests verify time-series suitability for modeling.
-
-### 2. Correlation Analysis
-
-Same-day correlation between sentiment and price changes is measured across stocks.
-
-### 3. Granger Causality Tests
-
-Tests whether sentiment signals provide predictive information for future price changes.
-
-Results show weak predictive power overall, with limited cases of statistical significance.
-
-### 4. Volatility Modeling (GARCH)
-
-GARCH(1,1) models are used to examine volatility persistence and market reactions to shocks.
-
-Results suggest sentiment contributes more strongly to volatility dynamics than to return prediction.
+```
+weight = 1 + retweets + 0.5 * likes
+```
 
 ---
 
-## 📈 Outputs
+## Statistical analysis pipeline
 
-The pipeline generates:
+Four analyses run over the daily series.
+
+### 1. Stationarity tests
+
+Augmented Dickey-Fuller tests check that the series are suitable for the models that
+follow.
+
+### 2. Correlation analysis
+
+Same-day correlation between sentiment and price change, measured per stock.
+
+### 3. Granger causality tests
+
+These test whether sentiment carries information about future price changes. Predictive
+power is weak overall, and only a few cases reach statistical significance.
+
+### 4. Volatility modeling (GARCH)
+
+GARCH(1,1) models measure volatility persistence and how the market reacts to shocks.
+Sentiment shows up more strongly in volatility than in return prediction.
+
+---
+
+## Outputs
+
+Each run writes:
 
 * Daily sentiment signals
-* Sentiment vs. return plots
+* Sentiment against return plots
 * Correlation statistics
 * Granger causality results
 * GARCH volatility parameters
 * Final analysis tables
 
-Results are saved automatically for reproducibility.
+Everything is saved to disk, so a result can be traced back to the run that produced it.
 
 ---
 
-## 🛠 Tech Stack
+## Tech stack
 
-Core technologies used:
-
-* Python
-* SQLite
-* Neo4j
-* Hugging Face Transformers
-* PyTorch
-* statsmodels
-* arch
-* pandas
-* matplotlib
-* yfinance
-* X API
+Python, SQLite, Neo4j, Hugging Face Transformers, PyTorch, statsmodels, arch, pandas,
+matplotlib, yfinance, X API.
 
 ---
 
-## 🎯 Project Motivation
+## Why I built it
 
-Financial markets increasingly react to online discourse. This project explores whether large-scale influencer sentiment carries measurable signals related to stock market movements and volatility.
-
-The goal is not to build a trading system, but to evaluate the statistical relationships between social sentiment and market behavior.
+Markets react to what gets said online, and I wanted to find out how much of that is
+measurable and how much is only assumed. The point was never a trading system. It was to test
+the statistical relationship between influencer sentiment and market behaviour, and to
+report the result even where it came back weak.
 
 ---
 
-## 📂 Repository Structure
+## Repository structure
 
-<pre class="overflow-visible! px-0!" data-start="4437" data-end="4688"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-[calc(var(--sticky-padding-top)+9*var(--spacing))]"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>.
+```
+.
 ├── collect_x_stock_tweets.py
 ├── downloading_data_training.py
 ├── downloading_data_testing.py
@@ -192,24 +192,24 @@ The goal is not to build a trading system, but to evaluate the statistical relat
 ├── config.py
 ├── requirements.txt
 └── README.md
-</span></span></code></div></div></pre>
+```
 
-Running `main.py` executes the end-to-end analysis pipeline.
-
----
-
-## 📌 Key Takeaways
-
-* Social sentiment shows measurable correlation with same-day stock movements.
-* Predictive power for next-day returns is limited.
-* Sentiment appears more relevant to volatility dynamics than return direction.
-* Influencer-driven discussion impacts stocks unevenly.
+`main.py` runs every stage in order.
 
 ---
 
-## 📄 Project Report & Slides
+## What I found
 
-Full methodology and results are documented here:
+* Social sentiment correlates measurably with same-day stock movement.
+* It predicts next-day returns poorly.
+* It matters more for volatility dynamics than for the direction of a return.
+* The effect is uneven across stocks, so no single influencer explains the market.
 
-- 📘 [Project Report](report/Stock_Sentiment_Report.pdf)
-- 📊 [Presentation Slides](report/Stock_Sentiment_Presentation.pdf)
+---
+
+## Report and slides
+
+The full methodology and results are written up here:
+
+- [Project Report](report/Stock_Sentiment_Report.pdf)
+- [Presentation Slides](report/Stock_Sentiment_Presentation.pdf)

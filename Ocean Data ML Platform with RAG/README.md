@@ -1,6 +1,6 @@
 # Ocean Data ML Platform with RAG
 
-An end-to-end pipeline that ingests raw NetCDF ocean sensor data from two
+A pipeline that ingests raw NetCDF ocean sensor data from two
 independent providers, harmonizes it with Apache Spark, trains an XGBoost
 temperature forecaster, and exposes a retrieval-augmented question-answering
 interface over the resulting metadata. A FastAPI service and Streamlit demo
@@ -85,8 +85,8 @@ split.
 | 1 hr | 0.286 | 0.425 | 0.557 |
 | 2 hr | 0.392 | 0.681 | 0.714 |
 
-Persistence wins at every horizon tested, and the gap widens rather than
-closes. At 1 and 2 hours out, both XGBoost variants post a **negative R²**
+Persistence wins at every horizon tested, and the gap keeps widening instead of
+closing. At 1 and 2 hours out, both XGBoost variants post a **negative R²**
 (-1.40 for temperature-only, -1.64 with sensor context), worse than
 predicting the test set's mean. Adding salinity and oxygen makes the model
 worse at five of the seven horizons, not better.
@@ -108,7 +108,7 @@ error curve is plotted in `artifacts/plots/horizon_experiment.png`.
 
 The practical conclusion: for this sensor, at these horizons, engineered
 features and multi-sensor context measurably hurt point-forecast accuracy
-rather than helping. That's a more useful result to publish than either
+instead of helping it. That's a more useful result to publish than either
 the original 0.9999 R² or a model that quietly beat a baseline nobody
 checked.
 
@@ -125,7 +125,7 @@ runs the identical persistence-vs-XGBoost comparison, at horizons from 1
 minute to 24 hours, against air temperature from ONC's [Baynes Sound
 meteorological station](https://dap.oceannetworks.ca/erddap/tabledap/scalar_1203278.html)
 (same regional network, ~4.5 months at 1-minute resolution, pulled live
-from ONC's ERDDAP server rather than the fixed NetCDF snapshots in
+from ONC's ERDDAP server, not the fixed NetCDF snapshots in
 `data/raw/`), a signal with an obvious deterministic
 driver, the daily solar heating cycle, that a naive "assume no change"
 forecast has no way to anticipate.
@@ -151,9 +151,8 @@ give it an equivalent to that literal day-old reading.
 
 Cross-sensor context helps here, consistently, which is the opposite of
 the ocean result: barometric pressure trend is a standard meteorological
-predictor of near-term temperature change, so adding it is exploiting a
-real physical relationship rather than fitting noise the training period
-won't repeat. Full metrics (RMSE, MAE, R² at every horizon) are in
+predictor of near-term temperature change, so adding it exploits a
+real physical relationship, not noise the training period won't repeat. Full metrics (RMSE, MAE, R² at every horizon) are in
 `artifacts/reports/air_temperature_benchmark.json`; the plot is
 `artifacts/plots/air_temperature_benchmark.png`.
 
@@ -173,11 +172,11 @@ negative and a positive case.
 The corpus is small by construction, 6 source files plus 4 experiment
 reports (model metrics, hyperparameter search, and both horizon
 benchmarks), so a retrieval eval here can't claim what a large-scale
-benchmark would. It's sized and scored to be honest about that rather than
-to produce a clean number: `scripts/run_rag_benchmark.py` runs 10
+benchmark would. It's sized and scored to be honest about that, not to produce a clean
+number: `scripts/run_rag_benchmark.py` runs 10
 natural-language questions (not paraphrases of the target labels, and
 covering every document at least once) at `top_k=2`, a real filter against
-a 10-document corpus rather than the `top_k=5` an earlier version used,
+a 10-document corpus, unlike the `top_k=5` an earlier version used,
 which returned half the corpus on every query regardless of relevance.
 
 | Metric | Value |
@@ -247,7 +246,7 @@ stores `Temperature` (in Kelvin). The harmonization step's synonym list only
 recognized the ONC name, so every NOAA temperature reading (145k rows) canonicalized to nothing and never reached the model, despite being counted
 in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
 generalizing the Celsius/Kelvin normalization so a value already in Celsius
-is relabeled rather than double-converted.
+is relabeled instead of double-converted.
 
 **Latitude and longitude as an accidental provider label.** The gold table
 combines ONC's Pacific Northwest site (one fixed coordinate) with NOAA's
@@ -273,7 +272,7 @@ is essentially unchanged (0.0071 either way), but the untuned
 default-params baseline moved from 0.00823 to 0.01172 once it lost the
 shortcut.
 
-A fifth issue was environmental rather than a data bug: on Windows,
+The fifth issue came from the environment, not the data: on Windows,
 importing `mlflow` before `torch` in the same process leaves torch's
 `c10.dll` unable to initialize (`WinError 1114`), which broke the RAG
 benchmark step specifically because `app.rag.evaluation` imports mlflow
@@ -288,7 +287,7 @@ the same running service returned two different numbers for what a caller
 would reasonably assume is one fact. Found the same way as the fifth
 issue: by calling the running service, not by reading the code. Fixed by
 having `/metrics` report both numbers, labeled `baseline` and `tuned`,
-rather than silently exposing only one.
+instead of silently exposing only one.
 
 **`/ask` was completely broken under `docker compose up`.** Ollama runs
 directly on the host, not as a compose service, and the API container
@@ -305,7 +304,7 @@ resolve (Docker Desktop provides it natively on Windows/Mac).
 The "corpus is small, `top_k=5` returns half of it regardless of
 relevance" fix earlier in this README was applied to
 `scripts/run_rag_benchmark.py`, but the live `POST /eval/retrieval`
-endpoint hardcoded its own default of 5 directly in the route rather than
+endpoint hardcoded its own default of 5 directly in the route instead of
 reading `settings.rag_eval_top_k`. Calling the documented endpoint with no
 arguments, exactly as a caller would, returned hit@k 1.0, term recall
 1.0: the identical suspiciously-perfect score this README already
@@ -452,7 +451,7 @@ from.
 A seventh source, ONC's Baynes Sound meteorological station (~120k rows,
 1-minute resolution, pulled live from ONC's public ERDDAP server), backs
 the air temperature comparison in `scripts/air_temperature_benchmark.py`.
-It's independent of the six files above, CSV rather than NetCDF, and not
+It's independent of the six files above, CSV instead of NetCDF, and not
 part of the Bronze/Silver/Gold pipeline, so it isn't in this table or the
 SHA256 manifest.
 
