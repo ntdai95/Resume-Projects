@@ -172,7 +172,7 @@ matplotlib, yfinance, X API.
 
 Markets react to what gets said online, and I wanted to find out how much of that is
 measurable and how much is only assumed. The point was never a trading system. It was to test
-the statistical relationship between influencer sentiment and market behaviour, and to
+the statistical relationship between influencer sentiment and market behavior, and to
 report the result even where it came back weak.
 
 ---

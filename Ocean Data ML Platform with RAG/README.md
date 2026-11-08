@@ -1,6 +1,6 @@
 # Ocean Data ML Platform with RAG
 
-A pipeline that ingests raw NetCDF ocean sensor data from two
+This project is a pipeline that ingests raw NetCDF ocean sensor data from two
 independent providers, harmonizes it with Apache Spark, trains an XGBoost
 temperature forecaster, and exposes a retrieval-augmented question-answering
 interface over the resulting metadata. A FastAPI service and Streamlit demo
@@ -24,8 +24,7 @@ uvicorn app.main:app
 | XGBoost, tuned (Optuna, 25 trials) | 0.00710 | 0.00527 | 0.99975 |
 
 Tuning cuts RMSE by about 39% over the default model, but neither XGBoost
-run beats the trivial baseline of repeating the last reading. **Read this
-alongside the caveat below**, an R² of 0.9997 looks like a strong forecaster
+run beats the trivial baseline of repeating the last reading. **Read this alongside the caveat below.** An R² of 0.9997 looks like a strong forecaster
 in isolation, and only looks ordinary once it's checked against a model that
 learns nothing at all.
 
@@ -98,9 +97,7 @@ future, and there is little genuine local trend to extrapolate. The
 lag-difference trend feature and the cross-sensor context let XGBoost fit
 fine-grained patterns in the training period's chronological 80%; at longer
 horizons those patterns increasingly describe training-period noise rather
-than anything that recurs in the held-out final 20%, so the model's error
-compounds while persistence's does not, persistence never had a training
-period to overfit in the first place. Full numbers, including MAE and R²
+than anything that recurs in the held-out final 20%, so the model's error compounds while persistence's does not: persistence never had a training period to overfit in the first place. Full numbers, including MAE and R²
 at every horizon, are in `artifacts/reports/horizon_experiment.json`; the
 error curve is plotted in `artifacts/plots/horizon_experiment.png`.
 
@@ -186,16 +183,14 @@ which returned half the corpus on every query regardless of relevance.
 
 The one miss is a legible failure, not noise: asked whether ocean water
 temperature's forecast skill changes at longer horizons, the retriever
-returned the model-metrics document instead of the horizon-experiment one
--- a reasonable confusion between two documents that are both, in a
+returned the model-metrics document instead of the horizon-experiment one, a reasonable confusion between two documents that are both, in a
 shallow sense, "about the model." Full per-query results are in
 `artifacts/reports/rag_eval_rows.jsonl`.
 
 This replaced an earlier version of this eval that scored a suspicious
 1.0: 4 queries that were near-restatements of the target term (*"which
 datasets mention salinity?"*) against a `top_k` that returned most of the
-corpus regardless of the question. Fixing it surfaced a real bug along the
-way, `app/rag/runtime.py` built each document's text with
+corpus regardless of the question. Fixing it surfaced a real bug along the way. `app/rag/runtime.py` built each document's text with
 `', '.join(row['variables'])` where `variables` was already a
 comma-joined string, not a list, so `join` iterated its characters and
 every document advertised its variables as `t, i, m, e, ..., o, x, y, g,
@@ -211,9 +206,7 @@ retriever's context look wrong to anyone who read it closely.
 ## Bugs found and fixed while building this
 
 The pipeline runs clean now, but it didn't when this pass started. Eight
-issues are worth documenting, and none of them threw an error at the point
-they were introduced, the code ran, produced plausible-looking output,
-and was wrong. Three invalidated the headline numbers directly; the other
+issues are worth documenting, and none of them threw an error at the point they were introduced. The code ran, produced plausible-looking output, and was wrong. Three invalidated the headline numbers directly; the other
 five didn't touch a reported number but broke something a caller would
 actually hit: the live `/predict` endpoint, the RAG benchmark step, a
 `/metrics` endpoint that quietly contradicted `/predict`, `/ask` itself
@@ -224,28 +217,25 @@ that quietly disagreed with the number published everywhere else.
 included both `value` (the raw measurement, e.g. degrees Kelvin) and the
 target `normalized_value` (`value - 273.15`, degrees Celsius). Any model can
 recover the target from that feature with one subtraction, which is exactly
-why an earlier version of this pipeline reported R² above 0.9999, it had
-memorized arithmetic, not learned a forecast. I fixed it by excluding
+why an earlier version of this pipeline reported R² above 0.9999. It had memorized arithmetic, not learned a forecast. I fixed it by excluding
 `value` (and the meaningless positional index `row`) from the feature
 columns in both `app/ml/train.py` and `scripts/hyperparameter_search.py`.
 
-**Context columns orphaned from their measurements.** Each NetCDF file
+**The context columns were orphaned from their measurements.** Each NetCDF file
 stores `time`, `latitude`, and `longitude` as data variables sharing a
 `row` dimension with the actual measurements, not as indexed coordinates.
 `extract_netcdf_to_frames` pulled one variable out of the dataset at a time
-(`ds[[var]].to_dataframe()`), which silently dropped every row's link back
-to its own timestamp and position, `hour` and `dayofyear` were 100% null,
+(`ds[[var]].to_dataframe()`), which silently dropped every row's link back to its own timestamp and position. `hour` and `dayofyear` were 100% null,
 and the chronological sort that the training code was already written to
 do never had a real `time_ts` column to sort on. I fixed it by extracting
 the whole dataset once per file and carrying `time`/`latitude`/`longitude`
 alongside each measurement row instead of re-deriving them per variable.
 
-**An entire data source silently excluded.** NOAA's sea-surface
+**An entire data source was silently excluded.** NOAA's sea-surface
 temperature file stores its variable as `TEMP_C` (already in Celsius); ONC's
 stores `Temperature` (in Kelvin). The harmonization step's synonym list only
 recognized the ONC name, so every NOAA temperature reading (145k rows) canonicalized to nothing and never reached the model, despite being counted
-in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
-generalizing the Celsius/Kelvin normalization so a value already in Celsius
+in the claimed dataset. I fixed it by adding `temp_c` to the synonym list and generalizing the Celsius/Kelvin normalization so a value already in Celsius
 is relabeled instead of double-converted.
 
 **Latitude and longitude acted as an accidental provider label.** The gold table
@@ -281,7 +271,7 @@ before anything imports the embedding model. I fixed it by importing
 `torch` first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
 `app/retrieval/embedder.py`.
 
-**Two endpoints, two different answers to "how accurate is the model."**
+**Two endpoints gave two different answers to "how accurate is the model".**
 `/predict` loads whichever model file exists preferentially (the tuned one, RMSE 0.0071) but `/metrics` read only the static report the
 baseline training script writes (RMSE 0.0117). Hitting both endpoints on
 the same running service returned two different numbers for what a caller
@@ -293,12 +283,10 @@ instead of silently exposing only one.
 
 **`/ask` was completely broken under `docker compose up`.** Ollama runs
 directly on the host, not as a compose service, and the API container
-defaulted to `OLLAMA_BASE_URL=http://localhost:11434`, inside a
-container, `localhost` means the container itself, not the host machine.
+defaulted to `OLLAMA_BASE_URL=http://localhost:11434`. Inside a container, `localhost` means the container itself, not the host machine.
 Every `/ask` call failed with a connection-refused error. `/predict` and
 `/search` never touch Ollama, so they worked fine and hid the problem
-until `/ask` was actually called through the container. Fixed by pointing
-the api service at `http://host.docker.internal:11434`, with the
+until `/ask` was actually called through the container. I fixed it by pointing the api service at `http://host.docker.internal:11434`, with the
 `extra_hosts: host-gateway` mapping Linux needs for that hostname to
 resolve (Docker Desktop provides it natively on Windows/Mac).
 
@@ -311,18 +299,14 @@ reading `settings.rag_eval_top_k`. Calling the documented endpoint with no
 arguments, exactly as a caller would, returned hit@k 1.0, term recall
 1.0: the identical suspiciously-perfect score this README already
 explains is a construction artifact, quietly reintroduced in a second
-place. Found by calling the live endpoint, not by re-reading the script I'd
-already fixed. Fixed by pointing the route's default at the same setting
-the script uses, so there's one source of truth instead of two.
+place. I found this by calling the live endpoint, not by re-reading the script I'd already fixed. I fixed it by pointing the route's default at the same setting the script uses, so there's one source of truth instead of two.
 
 While checking the retrieval path I also confirmed the FAISS backend
 (the non-default `VECTOR_BACKEND=faiss` option) actually works end to
 end, but `index_builder.py` called `FaissStore.save()` on every startup
 to a path nothing ever reads back, `FaissStore` has no `load()` method,
 and the index is always rebuilt from scratch on startup regardless of
-backend. Not a correctness bug (search results were fine), but a
-"persisted index" that persisted nothing. Removed the pointless save call
-and the README line that described it as persistence.
+backend. This was not a correctness bug, since search results were fine, but it was a "persisted index" that persisted nothing. I removed the pointless save call and the README line that described it as persistence.
 
 ---
 
@@ -519,8 +503,7 @@ streamlit run streamlit_app.py    # http://localhost:8501, separate terminal
 ```
 
 The API and the vector store are both containerized (`Dockerfile`,
-`docker-compose.yml`); Spark, training, and the benchmark scripts are not
--- they're one-off batch jobs, not long-running services, and run directly
+`docker-compose.yml`); Spark, training, and the benchmark scripts are not. They are one-off batch jobs rather than long-running services, and run directly
 against the host Python environment. Once the pipeline above has produced
 `data/` and `artifacts/` on the host, `docker compose up -d` starts both
 containers, mounting those directories in read-write so the API serves
@@ -562,7 +545,7 @@ file points the container at `host.docker.internal:11434`.
 
 ### The API surface
 
-Eight endpoints, self-documenting through FastAPI's generated OpenAPI schema.
+The service exposes eight endpoints, each self-documenting through FastAPI's generated OpenAPI schema.
 
 ![The API surface](docs/demo/00_overview.png)
 
@@ -586,13 +569,13 @@ This endpoint runs dense retrieval over the indexed metadata and reports. Asked 
 
 ### `POST /ask`
 
-This endpoint answers a question with retrieval-augmented generation. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. Here that check is quick. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
+This endpoint answers a question with retrieval-augmented generation. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. The check is easy to run here. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. `llama3` runs locally through Ollama and answers in about a minute on CPU.
 
 ![POST /ask](docs/demo/ask.png)
 
 ### `POST /eval/retrieval`
 
-Scores the retriever against the held-out query set instead of assuming it works, and writes the result to disk. Called with no arguments it uses the project's own default `top_k`, which is what the hit@k 0.9 and term recall 0.85 quoted above were measured at. A larger `top_k` flatters both numbers, so the default is the one worth publishing.
+This endpoint scores the retriever against the held-out query set instead of assuming it works, and it writes the result to disk. Called with no arguments it uses the project's own default `top_k`, which is what the hit@k 0.9 and term recall 0.85 quoted above were measured at. A larger `top_k` flatters both numbers, so the default is the one worth publishing.
 
 ![POST /eval/retrieval](docs/demo/eval_retrieval.png)
 
@@ -604,7 +587,7 @@ This endpoint returns a single-point forecast from the tuned model. The caller s
 
 ### `GET /forecast`
 
-The stored evaluation report for the forecasting model, with the path of the artifact it describes.
+This endpoint returns the stored evaluation report for the forecasting model, along with the path of the artifact it describes.
 
 ![GET /forecast](docs/demo/forecast.png)
 
@@ -620,5 +603,5 @@ This endpoint reports both halves of the system in one place, the forecasting me
 
 - No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real forecasting skill at 3-12 hour horizons (see above) but that comparison isn't wired into the API.)
 - The core ocean pipeline covers one region and six weeks of data, so it does not test generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
-- RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark, see the caveats in the RAG retrieval section above.
+- RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark. See the caveats in the RAG retrieval section above.
 - Spark runs on a single machine (`local[*]`), not on a real cluster.
