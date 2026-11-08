@@ -25,7 +25,7 @@ uvicorn app.main:app
 
 Tuning cuts RMSE by about 39% over the default model, but neither XGBoost
 run beats the trivial baseline of repeating the last reading. **Read this
-alongside the caveat below** — an R² of 0.9997 looks like a strong forecaster
+alongside the caveat below**, an R² of 0.9997 looks like a strong forecaster
 in isolation, and only looks ordinary once it's checked against a model that
 learns nothing at all.
 
@@ -68,7 +68,7 @@ no change," and that headroom is the honest thing to report.
 The one-step result above raises an obvious follow-up: does XGBoost close
 the gap at a longer forecast horizon, where "assume no change" should
 eventually run out of room? And does giving the model the site's other
-sensors — salinity and dissolved oxygen, sampled at the same mooring —
+sensors (salinity and dissolved oxygen, sampled at the same mooring)
 help it forecast temperature? `scripts/horizon_experiment.py` tests both:
 at seven horizons from 1 second to 2 hours, it trains one XGBoost model on
 temperature's own lags and time features, and a second with salinity and
@@ -87,7 +87,7 @@ split.
 
 Persistence wins at every horizon tested, and the gap widens rather than
 closes. At 1 and 2 hours out, both XGBoost variants post a **negative R²**
-(-1.40 for temperature-only, -1.64 with sensor context) — worse than
+(-1.40 for temperature-only, -1.64 with sensor context), worse than
 predicting the test set's mean. Adding salinity and oxygen makes the model
 worse at five of the seven horizons, not better.
 
@@ -99,7 +99,7 @@ lag-difference trend feature and the cross-sensor context let XGBoost fit
 fine-grained patterns in the training period's chronological 80%; at longer
 horizons those patterns increasingly describe training-period noise rather
 than anything that recurs in the held-out final 20%, so the model's error
-compounds while persistence's does not — persistence never had a training
+compounds while persistence's does not, persistence never had a training
 period to overfit in the first place. Full numbers, including MAE and R²
 at every horizon, are in `artifacts/reports/horizon_experiment.json`; the
 error curve is plotted in `artifacts/plots/horizon_experiment.png`.
@@ -117,7 +117,7 @@ checked.
 ## Testing the method on a signal that should be forecastable
 
 Everything above says persistence wins because subsurface ocean temperature
-is close to a random walk at these sampling rates — there's no local trend
+is close to a random walk at these sampling rates: there's no local trend
 to extrapolate. That's a claim about the *signal*, not a limitation of
 XGBoost or the feature set, and it's worth checking against a series that
 has a real, physically obvious predictable component. `scripts/air_temperature_benchmark.py`
@@ -126,7 +126,7 @@ minute to 24 hours, against air temperature from ONC's [Baynes Sound
 meteorological station](https://dap.oceannetworks.ca/erddap/tabledap/scalar_1203278.html)
 (same regional network, ~4.5 months at 1-minute resolution, pulled live
 from ONC's ERDDAP server rather than the fixed NetCDF snapshots in
-`data/raw/`) — a signal with an obvious deterministic
+`data/raw/`), a signal with an obvious deterministic
 driver, the daily solar heating cycle, that a naive "assume no change"
 forecast has no way to anticipate.
 
@@ -140,8 +140,7 @@ forecast has no way to anticipate.
 | 12 hr | 3.509 | 2.054 | **1.823** |
 | 24 hr | 1.460 | 1.957 | 1.531 |
 
-This is the crossover the ocean data never showed. Persistence wins at
-sub-hour horizons — nothing beats "no change" a minute from now — but
+This is the crossover the ocean data never showed. Persistence wins at sub-hour horizons (nothing beats "no change" a minute from now) but
 loses decisively from 3 hours out: at 6 and 12 hours its R² is actually
 **negative** (-0.57 and -1.95), while XGBoost with pressure and wind stays
 positive (0.39 and 0.20) and cuts RMSE by up to 48% at the 12-hour mark.
@@ -163,7 +162,7 @@ won't repeat. Full metrics (RMSE, MAE, R² at every horizon) are in
 Together, the two experiments are the actual point: the same pipeline,
 unchanged, correctly finds no exploitable structure in one signal and real,
 substantial structure in another, for reasons that follow from the physics
-of each. That's what "the model works" should mean here — not a single
+of each. That's what "the model works" should mean here: not a single
 headline metric, but a method that gets the right answer on both a
 negative and a positive case.
 
@@ -171,9 +170,9 @@ negative and a positive case.
 
 ## RAG retrieval
 
-The corpus is small by construction — 6 source files plus 4 experiment
+The corpus is small by construction, 6 source files plus 4 experiment
 reports (model metrics, hyperparameter search, and both horizon
-benchmarks) — so a retrieval eval here can't claim what a large-scale
+benchmarks), so a retrieval eval here can't claim what a large-scale
 benchmark would. It's sized and scored to be honest about that rather than
 to produce a clean number: `scripts/run_rag_benchmark.py` runs 10
 natural-language questions (not paraphrases of the target labels, and
@@ -197,14 +196,14 @@ This replaced an earlier version of this eval that scored a suspicious
 1.0: 4 queries that were near-restatements of the target term (*"which
 datasets mention salinity?"*) against a `top_k` that returned most of the
 corpus regardless of the question. Fixing it surfaced a real bug along the
-way — `app/rag/runtime.py` built each document's text with
+way, `app/rag/runtime.py` built each document's text with
 `', '.join(row['variables'])` where `variables` was already a
 comma-joined string, not a list, so `join` iterated its characters and
 every document advertised its variables as `t, i, m, e, ..., o, x, y, g,
 e, n` instead of `time, oxygen_corrected`. It still retrieved correctly
 often enough to pass the old eval, which is exactly why the old eval
 wasn't testing much. The fix also dropped two attributes the raw NOAA
-files carry — `title` and `institution` — that turned out to be
+files carry, `title` and `institution`, that turned out to be
 generic boilerplate from an unrelated NOAA program and would have made the
 retriever's context look wrong to anyone who read it closely.
 
@@ -214,7 +213,7 @@ retriever's context look wrong to anyone who read it closely.
 
 The pipeline runs clean now, but it didn't when this pass started. Eight
 issues are worth documenting, and none of them threw an error at the point
-they were introduced — the code ran, produced plausible-looking output,
+they were introduced, the code ran, produced plausible-looking output,
 and was wrong. Three invalidated the headline numbers directly; the other
 five didn't touch a reported number but broke something a caller would
 actually hit: the live `/predict` endpoint, the RAG benchmark step, a
@@ -226,7 +225,7 @@ that quietly disagreed with the number published everywhere else.
 included both `value` (the raw measurement, e.g. degrees Kelvin) and the
 target `normalized_value` (`value - 273.15`, degrees Celsius). Any model can
 recover the target from that feature with one subtraction, which is exactly
-why an earlier version of this pipeline reported R² above 0.9999 — it had
+why an earlier version of this pipeline reported R² above 0.9999, it had
 memorized arithmetic, not learned a forecast. Fixed by excluding `value`
 (and the meaningless positional index `row`) from the feature columns in
 both `app/ml/train.py` and `scripts/hyperparameter_search.py`.
@@ -236,7 +235,7 @@ stores `time`, `latitude`, and `longitude` as data variables sharing a
 `row` dimension with the actual measurements, not as indexed coordinates.
 `extract_netcdf_to_frames` pulled one variable out of the dataset at a time
 (`ds[[var]].to_dataframe()`), which silently dropped every row's link back
-to its own timestamp and position — `hour` and `dayofyear` were 100% null,
+to its own timestamp and position, `hour` and `dayofyear` were 100% null,
 and the chronological sort that the training code was already written to
 do never had a real `time_ts` column to sort on. Fixed by extracting the
 whole dataset once per file and carrying `time`/`latitude`/`longitude`
@@ -245,8 +244,7 @@ alongside each measurement row instead of re-deriving them per variable.
 **An entire data source silently excluded.** NOAA's sea-surface
 temperature file stores its variable as `TEMP_C` (already in Celsius); ONC's
 stores `Temperature` (in Kelvin). The harmonization step's synonym list only
-recognized the ONC name, so every NOAA temperature reading — 145k rows —
-canonicalized to nothing and never reached the model, despite being counted
+recognized the ONC name, so every NOAA temperature reading (145k rows) canonicalized to nothing and never reached the model, despite being counted
 in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
 generalizing the Celsius/Kelvin normalization so a value already in Celsius
 is relabeled rather than double-converted.
@@ -259,14 +257,14 @@ and neither `latitude` nor `longitude` was ever excluded from the model's
 features. Because the chronological split puts the entire test set inside
 one slice of ONC's own history (NOAA's rows sort earlier and land
 entirely in training), those two columns carried 94% of the trained
-model's feature importance — not because location predicts ocean
+model's feature importance, not because location predicts ocean
 temperature in any generalizable way, but because they perfectly encode
 which provider produced a row, and the two providers have very different
 baseline temperatures. This didn't corrupt the reported test metric,
 since every test row shares the same fixed ONC coordinate and the split
 is a no-op there, but it broke the live system: `/predict` has no way to
 accept a location, so it silently evaluated every request at
-`latitude=0, longitude=0` — a point the model never saw in training — and
+`latitude=0, longitude=0`, a point the model never saw in training, and
 returned nonsense (27.9°C from inputs around 12.4°C). Found by calling the
 deployed endpoint, not by reading the code. Fixed by excluding `latitude`
 and `longitude` from the feature columns in both `app/ml/train.py` and
@@ -284,8 +282,7 @@ first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
 `app/retrieval/embedder.py`.
 
 **Two endpoints, two different answers to "how accurate is the model."**
-`/predict` loads whichever model file exists preferentially — the tuned
-one, RMSE 0.0071 — but `/metrics` read only the static report the
+`/predict` loads whichever model file exists preferentially (the tuned one, RMSE 0.0071) but `/metrics` read only the static report the
 baseline training script writes (RMSE 0.0117). Hitting both endpoints on
 the same running service returned two different numbers for what a caller
 would reasonably assume is one fact. Found the same way as the fifth
@@ -295,7 +292,7 @@ rather than silently exposing only one.
 
 **`/ask` was completely broken under `docker compose up`.** Ollama runs
 directly on the host, not as a compose service, and the API container
-defaulted to `OLLAMA_BASE_URL=http://localhost:11434` — inside a
+defaulted to `OLLAMA_BASE_URL=http://localhost:11434`, inside a
 container, `localhost` means the container itself, not the host machine.
 Every `/ask` call failed with a connection-refused error. `/predict` and
 `/search` never touch Ollama, so they worked fine and hid the problem
@@ -310,7 +307,7 @@ relevance" fix earlier in this README was applied to
 `scripts/run_rag_benchmark.py`, but the live `POST /eval/retrieval`
 endpoint hardcoded its own default of 5 directly in the route rather than
 reading `settings.rag_eval_top_k`. Calling the documented endpoint with no
-arguments — exactly as a caller would — returned hit@k 1.0, term recall
+arguments, exactly as a caller would, returned hit@k 1.0, term recall
 1.0: the identical suspiciously-perfect score this README already
 explains is a construction artifact, quietly reintroduced in a second
 place. Found by calling the live endpoint, not by re-reading the script I'd
@@ -320,7 +317,7 @@ the script uses, so there's one source of truth instead of two.
 While checking the retrieval path I also confirmed the FAISS backend
 (the non-default `VECTOR_BACKEND=faiss` option) actually works end to
 end, but `index_builder.py` called `FaissStore.save()` on every startup
-to a path nothing ever reads back — `FaissStore` has no `load()` method,
+to a path nothing ever reads back, `FaissStore` has no `load()` method,
 and the index is always rebuilt from scratch on startup regardless of
 backend. Not a correctness bug (search results were fine), but a
 "persisted index" that persisted nothing. Removed the pointless save call
@@ -455,8 +452,8 @@ from.
 A seventh source, ONC's Baynes Sound meteorological station (~120k rows,
 1-minute resolution, pulled live from ONC's public ERDDAP server), backs
 the air temperature comparison in `scripts/air_temperature_benchmark.py`.
-It's independent of the six files above — CSV rather than NetCDF, and not
-part of the Bronze/Silver/Gold pipeline — so it isn't in this table or the
+It's independent of the six files above, CSV rather than NetCDF, and not
+part of the Bronze/Silver/Gold pipeline, so it isn't in this table or the
 SHA256 manifest.
 
 ### Where the data comes from
@@ -541,7 +538,7 @@ Horizon/context experiment (needs `data/silver/` populated, from
 `run_full_pipeline` or `spark_harmonize` alone): `python -m scripts.horizon_experiment`.
 
 Air temperature benchmark (downloads its own CSV from ONC's ERDDAP server
-on first run — see the script for the source URL):
+on first run, see the script for the source URL):
 `python -m scripts.air_temperature_benchmark`.
 
 To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
@@ -553,7 +550,7 @@ To rebuild from scratch, delete `data/bronze/`, `data/silver/`,
 ## Demo
 
 Every screenshot below is the running service, executed through its own Swagger UI at
-`http://localhost:8000/docs`. Bring it up with:
+`http://localhost:8000/docs`. Start the stack first:
 
 ```bash
 docker compose up -d          # API on :8000, Qdrant on :6333
@@ -582,13 +579,13 @@ The lineage answer, and the clearest demonstration of what harmonization did: ON
 
 ### `GET /search`
 
-Dense retrieval over the indexed metadata and reports. Asked which sensor measured dissolved oxygen, the oxygen manifest comes back first at 0.62 against 0.35 for the next hit — a wide enough gap to show the ranking is doing real work. All three hits are shown with their scores, source files and matched text.
+Dense retrieval over the indexed metadata and reports. Asked which sensor measured dissolved oxygen, the oxygen manifest comes back first at 0.62, against 0.35 for the next hit. That gap is wide enough to show the ranking is doing real work. All three hits are shown with their scores, source files and matched text.
 
 ![GET /search](docs/demo/search.png)
 
 ### `POST /ask`
 
-Retrieval-augmented answering. The response carries the generated answer **and** every chunk it was grounded in, so the answer can be checked rather than trusted — and here the check is easy: every claim in the answer (`oxygen_corrected`, the file `onc_oxygen.nc`, the Sea-Bird SBE 63 sensor 631500) appears verbatim in the top-ranked chunk directly below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
+Retrieval-augmented answering. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. Here that check is quick. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
 
 ![POST /ask](docs/demo/ask.png)
 
@@ -620,7 +617,7 @@ Both halves of the system in one place: forecasting metrics and retrieval metric
 
 ## Limitations
 
-- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real forecasting skill at 3-12 hour horizons — see above — but that comparison isn't wired into the API.)
-- One region, six weeks of data for the core ocean pipeline — no test of generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
-- RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark — see the caveats in the RAG retrieval section above.
+- No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real forecasting skill at 3-12 hour horizons (see above) but that comparison isn't wired into the API.)
+- One region, six weeks of data for the core ocean pipeline, no test of generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
+- RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark, see the caveats in the RAG retrieval section above.
 - Single-machine Spark (`local[*]`), not a real cluster.
