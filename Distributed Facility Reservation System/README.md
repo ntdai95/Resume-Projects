@@ -34,12 +34,12 @@ pytest
 
 # TA-05 Program Description
 
-**Our Facility**
+### Our Facility
 
 Our facility is located in the beautiful city of Chicago, IL. We operate in Central Time and are open from 9am to 6pm on weekdays and from 10am to 4pm on Saturdays. \
 We are closed on Sundays.
 
-**Program Overview**
+### Program Overview
 
 Our main program is a persistent command line program that allows facility managers and clients to access a dashboard, filled with options of what they can do within our facility. Facility managers have different options than clients, and client logins need to be enabled (at least once) by a facility manager. After client login is enabled, client users can access the program directly and choose from a wide variety of options.
 
@@ -49,7 +49,7 @@ Users cannot make reservations in the past, or make reservations for days where 
 
 If the reservation requested is invalid, the user will see that information and can then make a different request.
 
-**Making a Reservation (Interoperability)**
+### Making a Reservation (Interoperability)
 
 When a user makes a reservation, it will first check our local facility to see if this machine is available at this time. If it is not, but the reservation is otherwise valid, the program will randomly shuffle through the other four locations and try to make the reservation with their machine at the specified time. The program will randomly shuffle through until it finds an open machine, or until it has gone through all four other locations.
 

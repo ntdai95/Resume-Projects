@@ -220,14 +220,14 @@ actually hit: the live `/predict` endpoint, the RAG benchmark step, a
 under the documented Docker setup, and a live `/eval/retrieval` endpoint
 that quietly disagreed with the number published everywhere else.
 
-**Target leakage via the raw pre-normalization value.** The feature table
+**The raw pre-normalization value leaked the target.** The feature table
 included both `value` (the raw measurement, e.g. degrees Kelvin) and the
 target `normalized_value` (`value - 273.15`, degrees Celsius). Any model can
 recover the target from that feature with one subtraction, which is exactly
 why an earlier version of this pipeline reported R² above 0.9999, it had
-memorized arithmetic, not learned a forecast. Fixed by excluding `value`
-(and the meaningless positional index `row`) from the feature columns in
-both `app/ml/train.py` and `scripts/hyperparameter_search.py`.
+memorized arithmetic, not learned a forecast. I fixed it by excluding
+`value` (and the meaningless positional index `row`) from the feature
+columns in both `app/ml/train.py` and `scripts/hyperparameter_search.py`.
 
 **Context columns orphaned from their measurements.** Each NetCDF file
 stores `time`, `latitude`, and `longitude` as data variables sharing a
@@ -236,8 +236,8 @@ stores `time`, `latitude`, and `longitude` as data variables sharing a
 (`ds[[var]].to_dataframe()`), which silently dropped every row's link back
 to its own timestamp and position, `hour` and `dayofyear` were 100% null,
 and the chronological sort that the training code was already written to
-do never had a real `time_ts` column to sort on. Fixed by extracting the
-whole dataset once per file and carrying `time`/`latitude`/`longitude`
+do never had a real `time_ts` column to sort on. I fixed it by extracting
+the whole dataset once per file and carrying `time`/`latitude`/`longitude`
 alongside each measurement row instead of re-deriving them per variable.
 
 **An entire data source silently excluded.** NOAA's sea-surface
@@ -248,7 +248,7 @@ in the claimed dataset. Fixed by adding `temp_c` to the synonym list and
 generalizing the Celsius/Kelvin normalization so a value already in Celsius
 is relabeled instead of double-converted.
 
-**Latitude and longitude as an accidental provider label.** The gold table
+**Latitude and longitude acted as an accidental provider label.** The gold table
 combines ONC's Pacific Northwest site (one fixed coordinate) with NOAA's
 sea-surface temperature site (a different fixed coordinate, thousands of
 kilometers away in the U.S. Virgin Islands) into a single feature table,
@@ -264,9 +264,10 @@ since every test row shares the same fixed ONC coordinate and the split
 is a no-op there, but it broke the live system: `/predict` has no way to
 accept a location, so it silently evaluated every request at
 `latitude=0, longitude=0`, a point the model never saw in training, and
-returned nonsense (27.9°C from inputs around 12.4°C). Found by calling the
-deployed endpoint, not by reading the code. Fixed by excluding `latitude`
-and `longitude` from the feature columns in both `app/ml/train.py` and
+returned nonsense (27.9°C from inputs around 12.4°C). I found this by
+calling the deployed endpoint, not by reading the code, and I fixed it by
+excluding `latitude` and `longitude` from the feature columns in both
+`app/ml/train.py` and
 `scripts/hyperparameter_search.py` and retraining: the tuned model's RMSE
 is essentially unchanged (0.0071 either way), but the untuned
 default-params baseline moved from 0.00823 to 0.01172 once it lost the
@@ -276,17 +277,18 @@ The fifth issue came from the environment, not the data: on Windows,
 importing `mlflow` before `torch` in the same process leaves torch's
 `c10.dll` unable to initialize (`WinError 1114`), which broke the RAG
 benchmark step specifically because `app.rag.evaluation` imports mlflow
-before anything imports the embedding model. Fixed by importing `torch`
-first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
+before anything imports the embedding model. I fixed it by importing
+`torch` first in `app/main.py`, `scripts/run_rag_benchmark.py`, and
 `app/retrieval/embedder.py`.
 
 **Two endpoints, two different answers to "how accurate is the model."**
 `/predict` loads whichever model file exists preferentially (the tuned one, RMSE 0.0071) but `/metrics` read only the static report the
 baseline training script writes (RMSE 0.0117). Hitting both endpoints on
 the same running service returned two different numbers for what a caller
-would reasonably assume is one fact. Found the same way as the fifth
-issue: by calling the running service, not by reading the code. Fixed by
-having `/metrics` report both numbers, labeled `baseline` and `tuned`,
+would reasonably assume is one fact. I found this the same way as the
+fifth issue, by calling the running service instead of reading the code.
+I fixed it by having `/metrics` report both numbers, labeled `baseline`
+and `tuned`,
 instead of silently exposing only one.
 
 **`/ask` was completely broken under `docker compose up`.** Ollama runs
@@ -566,25 +568,25 @@ Eight endpoints, self-documenting through FastAPI's generated OpenAPI schema.
 
 ### `GET /health`
 
-Liveness check. Returns once the RAG runtime has finished loading on startup.
+This is the liveness check. It returns once the RAG runtime has finished loading on startup.
 
 ![GET /health](docs/demo/health.png)
 
 ### `GET /provenance/{variable}`
 
-The lineage answer, and the clearest demonstration of what harmonization did: ONC called it `Temperature` in `onc_temperature.nc`, NOAA called it `TEMP_C` in `noaa_sst.nc`, and both rows record the transform that mapped them onto one canonical variable. Resolved across 10.79M rows in the silver table.
+This endpoint answers the lineage question, and it is the clearest demonstration of what harmonization did. ONC called it `Temperature` in `onc_temperature.nc`, NOAA called it `TEMP_C` in `noaa_sst.nc`, and both rows record the transform that mapped them onto one canonical variable. The lookup resolves across 10.79M rows in the silver table.
 
 ![GET /provenance/{variable}](docs/demo/provenance.png)
 
 ### `GET /search`
 
-Dense retrieval over the indexed metadata and reports. Asked which sensor measured dissolved oxygen, the oxygen manifest comes back first at 0.62, against 0.35 for the next hit. That gap is wide enough to show the ranking is doing real work. All three hits are shown with their scores, source files and matched text.
+This endpoint runs dense retrieval over the indexed metadata and reports. Asked which sensor measured dissolved oxygen, the oxygen manifest comes back first at 0.62, against 0.35 for the next hit. That gap is wide enough to show the ranking is doing real work. All three hits are shown with their scores, source files and matched text.
 
 ![GET /search](docs/demo/search.png)
 
 ### `POST /ask`
 
-Retrieval-augmented answering. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. Here that check is quick. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
+This endpoint answers a question with retrieval-augmented generation. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. Here that check is quick. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
 
 ![POST /ask](docs/demo/ask.png)
 
@@ -596,7 +598,7 @@ Scores the retriever against the held-out query set instead of assuming it works
 
 ### `POST /predict`
 
-Single-point forecast from the tuned model. The caller supplies the lag features, which is what makes the persistence caveat above so concrete: `lag_1` carries most of the answer.
+This endpoint returns a single-point forecast from the tuned model. The caller supplies the lag features, which is what makes the persistence caveat above so concrete: `lag_1` carries most of the answer.
 
 ![POST /predict](docs/demo/predict.png)
 
@@ -608,7 +610,7 @@ The stored evaluation report for the forecasting model, with the path of the art
 
 ### `GET /metrics`
 
-Both halves of the system in one place: forecasting metrics and retrieval metrics.
+This endpoint reports both halves of the system in one place, the forecasting metrics and the retrieval metrics.
 
 ![GET /metrics](docs/demo/metrics.png)
 
@@ -617,6 +619,6 @@ Both halves of the system in one place: forecasting metrics and retrieval metric
 ## Limitations
 
 - No forecast horizon tested (1 second to 2 hours) beats naive persistence on this ocean temperature sensor; the deployed `/predict` model is a working pipeline, not a genuinely predictive one. (Air temperature at the same regional network does show real forecasting skill at 3-12 hour horizons (see above) but that comparison isn't wired into the API.)
-- One region, six weeks of data for the core ocean pipeline, no test of generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
+- The core ocean pipeline covers one region and six weeks of data, so it does not test generalization across seasons or locations. The air temperature comparison covers a different four-and-a-half-month window at a nearby site, not the same period.
 - RAG evaluation is 10 hand-written queries over a 10-document corpus, not a large-scale benchmark, see the caveats in the RAG retrieval section above.
-- Single-machine Spark (`local[*]`), not a real cluster.
+- Spark runs on a single machine (`local[*]`), not on a real cluster.

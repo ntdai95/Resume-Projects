@@ -132,7 +132,7 @@ follow.
 
 ### 2. Correlation analysis
 
-Same-day correlation between sentiment and price change, measured per stock.
+This measures the same-day correlation between sentiment and price change, one stock at a time.
 
 ### 3. Granger causality tests
 
