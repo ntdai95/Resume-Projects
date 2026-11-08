@@ -31,6 +31,14 @@ EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 Json = Any
 
 
+# The machines this facility holds. Workshops are numbered separately and
+# validated by their number.
+RESERVABLE_MACHINES = {
+    'microv1', 'microv2', 'irrad1', 'irrad2',
+    'extrud1', 'extrud2', 'harvest', 'crusher',
+}
+
+
 global client_login, manager_registration, environment
 
 
@@ -170,6 +178,59 @@ async def root_v1(session: Optional[str] = ''):
                     "Active": active_sessions}
     return {"message": "Reservation System Root V1"}
 
+
+@app.get("/v1/health")
+async def health() -> Dict[str, Any]:
+    """Health check
+
+    Reports whether the service is up and whether its database answers. No
+    session is needed, so a container healthcheck or a monitor can call it.
+
+    Returns:
+        json with the service status and the database status
+    """
+    try:
+        db.get_clients()
+        database = "ok"
+    except Exception:
+        database = "unavailable"
+    return {"status": "ok" if database == "ok" else "degraded",
+            "database": database,
+            "environment": environment}
+
+
+@app.get("/v1/facility/")
+async def facility() -> Dict[str, Any]:
+    """Facility information
+
+    Publishes where the facility is, when it is open, what can be reserved and
+    what it costs. The prices used to live only inside the cost calculation and
+    in our own client's prompt text, so no other facility's client could find
+    out what anything costs.
+
+    Returns:
+        json with the location, the opening hours and the rate card
+    """
+    return {
+        "name": "APIGROUP5 at Chicago, IL",
+        "timezone": "America/Chicago",
+        "hours": {
+            "weekdays": "09:00-18:00",
+            "saturday": "10:00-16:00",
+            "sunday": "closed",
+        },
+        "reservable": sorted(
+            [m for m in RESERVABLE_MACHINES] + ["workshop1", "workshop2",
+                                                "workshop3", "workshop4"]),
+        "hourly_rates": reservation.HOURLY_RATES,
+        "advance_discount": {
+            "days_ahead": reservation.ADVANCE_DISCOUNT_DAYS,
+            "multiplier": reservation.ADVANCE_DISCOUNT,
+        },
+        "down_payment": "half of the total cost",
+    }
+
+
 @app.get("/v1/login_status/")
 async def login_status():
     """Login status
@@ -249,8 +310,7 @@ async def hold_post(hold: Hold):
                 return {"success": False, "message": reservation_result["message"], "facility_name": "APIGROUP5 at Chicago, IL"}
             else:
                 db.add_hold_status_to_reservation(args['client_name'], reservation_result['reservation_id'])
-    elif request not in {'microv1', 'microv2', 'irrad1', 'irrad2',
-                         'extrud1', 'extrud2', 'harvest', 'crusher'}:
+    elif request not in RESERVABLE_MACHINES:
         reservation_result = {"message": "That machine does not exist."}
     else:
         reservation_result = program.make_machine_reservation(request,
@@ -370,15 +430,7 @@ async def reservation_post(
             end_time
         )
     else:
-        if thing_to_reserve not in {
-            'microv1',
-            'microv2',
-            'irrad1',
-            'irrad2',
-            'extrud1',
-            'extrud2',
-            'harvest',
-            'crusher'}:
+        if thing_to_reserve not in RESERVABLE_MACHINES:
             return {"message": "That machine does not exist."}
         result = program.make_machine_reservation(
             thing_to_reserve,

@@ -6,7 +6,7 @@ other teams' independent implementations of one shared HTTP contract that nobody
 change on their own, so a booking that cannot be filled locally is offered to the other
 facilities before the customer is turned away.
 
-The service exposes 28 endpoints, 25 of them under `/v1`, with OpenAPI documentation
+The service exposes 30 endpoints, 27 of them under `/v1`, with OpenAPI documentation
 generated at `/docs`. The test suite is 71 pytest tests across the API, the database
 and the reservation rules.
 
@@ -384,6 +384,21 @@ the local server, with the old address kept as a comment.
 **There was no requirements file.** The dependencies had to be guessed from the import
 statements. `requirements.txt` now lists them, and a clean environment built only from
 it runs the full test suite.
+
+**The rate card lived in two places and neither was reachable.** The hourly prices
+were literals inside the cost calculation, with a second copy typed into the command
+line client's prompt text. No other facility's client could find out what anything
+costs, which matters when the booking contract is shared with four other teams. The
+rates and the 25% discount for booking at least 14 days ahead, which was not written
+down anywhere, are constants now and are published by `GET /v1/facility/`. A
+`GET /v1/health` endpoint reports whether the service and its database are answering.
+
+**Two methods were defined twice.** `make_machine_reservation` and
+`make_machine_hold` each had an earlier copy that Python discarded in favour of the
+later one. The dead copies called `self.calculate_downpayment` and
+`self.check_machine_res_valid`, neither of which exists, so they would have raised
+had anything reached them. They are gone, along with 78 lines that could only mislead
+a reader.
 
 **The menus in this README did not match the program.** Both dashboards were listed
 with the wrong numbers, so following the documentation selected the wrong option. They

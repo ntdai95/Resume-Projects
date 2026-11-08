@@ -6,6 +6,36 @@ from database import Database
 from typing import Dict, Any, List, Tuple
 
 
+# Hourly rate for each family of reservable thing. A reservation is booked in
+# half hour slots, so a slot costs half of these.
+HOURLY_RATES = {
+    "workshop": 99,
+    "microv": 2000,
+    "irrad": 2200,
+    "extrud": 500,
+    "crusher": 20000,
+    "harvest": 8800,
+}
+
+# Booking this far ahead takes this much off the price.
+ADVANCE_DISCOUNT_DAYS = 14
+ADVANCE_DISCOUNT = 0.75
+
+
+def hourly_rate(thing_to_reserve: str) -> int:
+    """Look up the hourly rate for something reservable
+
+    Args:
+        thing_to_reserve: the machine or workshop name, such as "workshop2"
+    Returns:
+        the hourly rate, or 0 when the name is not recognised
+    """
+    for family, rate in HOURLY_RATES.items():
+        if thing_to_reserve.startswith(family):
+            return rate
+    return 0
+
+
 class Program:
     """Program class
 
@@ -45,84 +75,6 @@ class Program:
             print("ERROR MESSAGES: ", res_message, facil_message)
             return (False, res_message + " " + facil_message)
         return (True, "")
-
-
-    def make_machine_hold(self, 
-            machine: str,
-            cust_id: str, 
-            reservation_date: str, 
-            start_time: str, 
-            end_time: str,
-            held_for_user: str) -> Dict[str, Any]:
-        """
-        Make a machine hold
-        """
-        reservation_id = str(uuid.uuid4())
-        datetime_list = []
-
-        start_datetime = datetime.strptime((reservation_date + " " + start_time),'%Y-%m-%d %H:%M')
-        start_day_end_time = datetime.strptime((reservation_date + " " + end_time),'%Y-%m-%d %H:%M')
-
-        time_delta = start_day_end_time - start_datetime
-
-        for y in [y for y in range(time_delta.seconds + 1) if y % 1800 == 0]:
-            datetime_list.append(start_datetime + timedelta(seconds=y))
-        datetime_list = datetime_list[0:-1]
-
-        valid, error = self.check_machine_res_valid(datetime_list, machine)
-
-        if not valid:
-            return {"message": f"There is an error with your hold: {error}"}
-        else:
-            self.db.add_hold(reservation_id, cust_id, datetime_list, machine, held_for_user)
-            print(f"Machine hold successful!\n - Reservation ID: {reservation_id}\n")
-            return {
-                "total_cost": 0, 
-                "down_payment": 0,
-                "facility_requested": cust_id,
-                "held_for_user": held_for_user,
-                "reservation_id": reservation_id}
-
-
-    def make_machine_reservation(self, 
-            machine: str,
-            cust_id: str, 
-            reservation_date: str, 
-            start_time: str, 
-            end_time: str) -> Dict[str, Any]:
-        """
-        Make a machine reservation
-        """
-        reservation_id = str(uuid.uuid4())
-        datetime_list = []
-
-        start_datetime = datetime.strptime((reservation_date + " " + start_time),'%Y-%m-%d %H:%M')
-        start_day_end_time = datetime.strptime((reservation_date + " " + end_time),'%Y-%m-%d %H:%M')
-
-        time_delta = start_day_end_time - start_datetime
-
-        for y in [y for y in range(time_delta.seconds + 1) if y % 1800 == 0]:
-            datetime_list.append(start_datetime + timedelta(seconds=y))
-        datetime_list = datetime_list[0:-1]
-
-        valid, error = self.check_machine_res_valid(datetime_list, machine)
-
-        if not valid:
-            return {"message": f"There is an error with your reservation: {error}"}
-        else:
-            total_cost, down_payment = self.calculate_downpayment(machine, datetime_list)
-            transaction_type = "Reserve"
-            print("datetime_list", datetime_list, "\n")
-
-            self.db.add_reservations(reservation_id, cust_id, datetime_list, machine)
-            self.db.add_transaction(cust_id, reservation_id, transaction_type, total_cost, 
-                                    down_payment, datetime_list[0])
-            print(f"Machine reservation successful!\n - Reservation ID: {reservation_id}\n" +
-                  f" - Total cost: ${total_cost}\n - Total down payment: ${down_payment}\n")
-            return {
-                "total_cost": total_cost, 
-                "down_payment": down_payment, 
-                "reservation_id": reservation_id}
 
 
     def _check_workshop_res_valid(self, datetime_list: List[datetime], thing_to_reserve: str) -> Tuple[bool, str]:
@@ -234,23 +186,13 @@ class Program:
         total_cost = 0
         now = datetime.now(timezone('America/Chicago'))
         min_date = min(datetime_list)
-        if (timezone('America/Chicago').localize(min_date) - now) >= timedelta(days=14):
-            discount = 0.75
+        if (timezone('America/Chicago').localize(min_date) - now) >= timedelta(days=ADVANCE_DISCOUNT_DAYS):
+            discount = ADVANCE_DISCOUNT
         else:
             discount = 1
+        slot_cost = (hourly_rate(thing_to_reserve) / 2) * discount
         for _ in datetime_list:
-            if "workshop" in thing_to_reserve:
-                total_cost = total_cost + ((99 / 2) * discount)
-            elif "microv" in thing_to_reserve:
-                total_cost = total_cost + ((2000 / 2) * discount)
-            elif "irrad" in thing_to_reserve:
-                total_cost = total_cost + ((2200 / 2) * discount)
-            elif "extrud" in thing_to_reserve:
-                total_cost = total_cost + ((500 / 2) * discount)
-            elif thing_to_reserve == "crusher":
-                total_cost = total_cost + (10000 * discount)
-            elif thing_to_reserve == "harvest":
-                total_cost = total_cost + ((8800 / 2) * discount)
+            total_cost = total_cost + slot_cost
         down_payment = total_cost / 2
         return (total_cost, down_payment)
 
