@@ -22,7 +22,6 @@ class Retriever:
                     "variable": metadata.get("variable"),
                     "chunk_id": metadata.get("chunk_id"),
                     "text": metadata.get("text", ""),
-                    "metadata": metadata,
                 }
             )
 

@@ -582,19 +582,19 @@ The lineage answer, and the clearest demonstration of what harmonization did: ON
 
 ### `GET /search`
 
-Dense retrieval over the indexed metadata and reports, scored by cosine similarity. All three hits are shown, each carrying its score, source file and the text that was matched.
+Dense retrieval over the indexed metadata and reports. Asked which sensor measured dissolved oxygen, the oxygen manifest comes back first at 0.62 against 0.35 for the next hit — a wide enough gap to show the ranking is doing real work. All three hits are shown with their scores, source files and matched text.
 
 ![GET /search](docs/demo/search.png)
 
 ### `POST /ask`
 
-Retrieval-augmented answering. The response carries the generated answer **and** every chunk it was grounded in, so the answer can be checked rather than trusted — and this one checks out: the three figures it reports are identical to what `GET /metrics` returns below. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
+Retrieval-augmented answering. The response carries the generated answer **and** every chunk it was grounded in, so the answer can be checked rather than trusted — and here the check is easy: every claim in the answer (`oxygen_corrected`, the file `onc_oxygen.nc`, the Sea-Bird SBE 63 sensor 631500) appears verbatim in the top-ranked chunk directly below it. Answered by `llama3` running locally through Ollama, which takes about a minute on CPU.
 
 ![POST /ask](docs/demo/ask.png)
 
 ### `POST /eval/retrieval`
 
-Scores the retriever against the held-out query set instead of assuming it works, and writes the result to disk. Called with no arguments, exactly as a caller would — which is the call that surfaced the hardcoded `top_k` bug written up above. Now that the route reads `settings.rag_eval_top_k`, it returns the same hit@k 0.9 and term recall 0.85 quoted at the top of this README rather than the 1.0 pair that used to come back.
+Scores the retriever against the held-out query set instead of assuming it works, and writes the result to disk. Called with no arguments it uses the project's own default `top_k`, which is what the hit@k 0.9 and term recall 0.85 quoted above were measured at. A larger `top_k` flatters both numbers, so the default is the one worth publishing.
 
 ![POST /eval/retrieval](docs/demo/eval_retrieval.png)
 
