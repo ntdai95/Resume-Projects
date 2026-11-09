@@ -66,12 +66,49 @@ Daily OHLCV data comes from `yfinance` for these stocks:
 - Tencent is tracked as `TCEHY`.
 
 SQLite stores the records used for date joins and statistical analysis. Neo4j
-stores the relationship graph:
+stores the same collection as a knowledge graph so the project can preserve
+who posted each message and which stocks that message connects to.
 
-```text
-(Person) -[:POSTED]-> (Tweet) -[:MENTIONS]-> (Stock)
+## Knowledge graph
+
+The graph has three node types and two directed relationships:
+
+```mermaid
+graph LR
+    P["Person<br/>id, username, name"] -->|POSTED| T["Tweet<br/>id, text, time, language<br/>likes, reposts, replies, quotes"]
+    T -->|MENTIONS| S["Stock<br/>symbol"]
 ```
 
+A tweet can connect to more than one stock, while every tweet remains linked
+to its original author. Unique constraints on person IDs, tweet IDs, and stock
+symbols prevent repeated collection runs from creating duplicate nodes.
+
+The two databases serve different purposes:
+
+| Store | Role in the project |
+|---|---|
+| SQLite | Supplies the tabular records used to aggregate daily sentiment, join it to dated market prices, and run the statistical tests. |
+| Neo4j | Preserves author-to-post-to-stock relationships for provenance and exploratory graph queries that would otherwise require repeated table joins. |
+
+For example, the graph can rank the most-mentioned stocks, count how often each
+influencer discussed a company, or find posts that connected several tracked
+stocks:
+
+```cypher
+MATCH (person:Person)-[:POSTED]->(:Tweet)-[:MENTIONS]->(stock:Stock)
+RETURN person.username, stock.symbol, count(*) AS posts
+ORDER BY posts DESC;
+```
+
+```cypher
+MATCH (tweet:Tweet)-[:MENTIONS]->(stock:Stock)
+WITH tweet, collect(stock.symbol) AS symbols
+WHERE size(symbols) > 1
+RETURN tweet.id, symbols;
+```
+
+The current Granger and GARCH pipeline reads from SQLite; the knowledge graph
+is a relationship and provenance layer rather than an input to those models.
 The repository includes a Neo4j dump but does not commit API credentials or
 local SQLite databases. Credentials belong in a local `.env` file.
 
