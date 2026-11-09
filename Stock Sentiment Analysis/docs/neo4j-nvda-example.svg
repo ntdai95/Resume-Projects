@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1160" viewBox="0 0 1600 1160" role="img" aria-labelledby="title description">
+  <title id="title">Readable NVDA knowledge graph example</title>
+  <desc id="description">Four people connect through seven selected tweet nodes to the NVDA stock node. The nodes and relationships come from the project's Neo4j database.</desc>
+  <defs>
+    <marker id="arrow-posted" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5273a7" />
+    </marker>
+    <marker id="arrow-mentions" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3f8f73" />
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#162033" flood-opacity="0.14" />
+    </filter>
+    <style>
+      .title { font: 700 42px Arial, sans-serif; fill: #172033; }
+      .subtitle { font: 24px Arial, sans-serif; fill: #536078; }
+      .column { font: 700 25px Arial, sans-serif; letter-spacing: 1px; fill: #536078; }
+      .node-title { font: 700 25px Arial, sans-serif; fill: #172033; }
+      .node-meta { font: 21px Arial, sans-serif; fill: #3f4a60; }
+      .tweet-text { font: 22px Arial, sans-serif; fill: #172033; }
+      .tweet-meta { font: 19px Arial, sans-serif; fill: #59647a; }
+      .stock { font: 700 38px Arial, sans-serif; fill: #172033; }
+      .stock-meta { font: 21px Arial, sans-serif; fill: #4d586d; }
+      .legend { font: 21px Arial, sans-serif; fill: #3f4a60; }
+      .footer { font: 22px Arial, sans-serif; fill: #536078; }
+      .posted { fill: none; stroke: #5273a7; stroke-width: 3; marker-end: url(#arrow-posted); }
+      .mentions { fill: none; stroke: #3f8f73; stroke-width: 3; marker-end: url(#arrow-mentions); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1160" fill="#f7f9fc" />
+  <text x="70" y="70" class="title">Readable NVDA knowledge graph example</text>
+  <text x="70" y="112" class="subtitle">Actual Neo4j nodes: up to two NVDA tweets per person, ranked by likes plus reposts.</text>
+
+  <line x1="70" y1="145" x2="1530" y2="145" stroke="#d8deea" stroke-width="2" />
+  <text x="90" y="190" class="column">PERSON</text>
+  <text x="545" y="190" class="column">TWEET</text>
+  <text x="1325" y="190" class="column">STOCK</text>
+
+  <!-- POSTED relationships -->
+  <path class="posted" d="M390 280 C455 280, 455 245, 515 245" />
+  <path class="posted" d="M390 485 C450 485, 455 380, 515 380" />
+  <path class="posted" d="M390 485 C450 485, 455 495, 515 495" />
+  <path class="posted" d="M390 705 C450 705, 455 630, 515 630" />
+  <path class="posted" d="M390 705 C450 705, 455 745, 515 745" />
+  <path class="posted" d="M390 930 C450 930, 455 880, 515 880" />
+  <path class="posted" d="M390 930 C450 930, 455 995, 515 995" />
+
+  <!-- MENTIONS relationships -->
+  <path class="mentions" d="M1085 245 C1185 245, 1200 570, 1300 570" />
+  <path class="mentions" d="M1085 380 C1185 380, 1200 580, 1300 580" />
+  <path class="mentions" d="M1085 495 C1185 495, 1200 590, 1300 590" />
+  <path class="mentions" d="M1085 630 C1185 630, 1200 600, 1300 600" />
+  <path class="mentions" d="M1085 745 C1185 745, 1200 610, 1300 610" />
+  <path class="mentions" d="M1085 880 C1185 880, 1200 620, 1300 620" />
+  <path class="mentions" d="M1085 995 C1185 995, 1200 630, 1300 630" />
+
+  <!-- Person nodes -->
+  <g filter="url(#shadow)">
+    <rect x="70" y="225" width="320" height="110" rx="28" fill="#d9d5a9" stroke="#9f9a68" stroke-width="3" />
+    <rect x="70" y="430" width="320" height="110" rx="28" fill="#d9d5a9" stroke="#9f9a68" stroke-width="3" />
+    <rect x="70" y="650" width="320" height="110" rx="28" fill="#d9d5a9" stroke="#9f9a68" stroke-width="3" />
+    <rect x="70" y="875" width="320" height="110" rx="28" fill="#d9d5a9" stroke="#9f9a68" stroke-width="3" />
+  </g>
+  <text x="95" y="270" class="node-title">Cassandra Unchained</text>
+  <text x="95" y="305" class="node-meta">@michaeljburry</text>
+  <text x="95" y="475" class="node-title">Cathie Wood</text>
+  <text x="95" y="510" class="node-meta">@CathieDWood</text>
+  <text x="95" y="695" class="node-title">Elon Musk</text>
+  <text x="95" y="730" class="node-meta">@elonmusk</text>
+  <text x="95" y="920" class="node-title">Jim Cramer</text>
+  <text x="95" y="955" class="node-meta">@jimcramer</text>
+
+  <!-- Tweet nodes -->
+  <g filter="url(#shadow)" fill="#ead0fa" stroke="#b767df" stroke-width="3">
+    <rect x="515" y="205" width="570" height="80" rx="22" />
+    <rect x="515" y="340" width="570" height="80" rx="22" />
+    <rect x="515" y="455" width="570" height="80" rx="22" />
+    <rect x="515" y="590" width="570" height="80" rx="22" />
+    <rect x="515" y="705" width="570" height="80" rx="22" />
+    <rect x="515" y="840" width="570" height="80" rx="22" />
+    <rect x="515" y="955" width="570" height="80" rx="22" />
+  </g>
+
+  <text x="540" y="238" class="tweet-text">“Understating depreciation by extending useful life...”</text>
+  <text x="540" y="268" class="tweet-meta">2025-11-10 · 16,050 likes · 2,379 reposts</text>
+
+  <text x="540" y="373" class="tweet-text">“ARK bought NVDA in 2014 at about $5...”</text>
+  <text x="540" y="403" class="tweet-meta">2024-02-26 · 2,734 likes · 204 reposts</text>
+
+  <text x="540" y="488" class="tweet-text">“Looking forward to a panel at NVIDIA GTC...”</text>
+  <text x="540" y="518" class="tweet-meta">2024-03-17 · 686 likes · 88 reposts</text>
+
+  <text x="540" y="623" class="tweet-text">“RT @nvidia: From rockets to AI...”</text>
+  <text x="540" y="653" class="tweet-meta">2025-10-17 · 3,904 reposts</text>
+
+  <text x="540" y="738" class="tweet-text">“@nvidia Concerning”</text>
+  <text x="540" y="768" class="tweet-meta">2025-09-22 · 1,927 likes · 154 reposts</text>
+
+  <text x="540" y="873" class="tweet-text">“Nvidia, own it, don't trade it”</text>
+  <text x="540" y="903" class="tweet-meta">2025-10-28 · 4,880 likes · 344 reposts</text>
+
+  <text x="540" y="988" class="tweet-text">“This Nvidia news... could turn Nasdaq futures around.”</text>
+  <text x="540" y="1018" class="tweet-meta">2025-07-15 · 3,935 likes · 217 reposts</text>
+
+  <!-- Stock node -->
+  <g filter="url(#shadow)">
+    <rect x="1300" y="535" width="230" height="130" rx="65" fill="#ffc0ad" stroke="#e17e64" stroke-width="4" />
+  </g>
+  <text x="1415" y="590" text-anchor="middle" class="stock">NVDA</text>
+  <text x="1415" y="625" text-anchor="middle" class="stock-meta">Stock node</text>
+
+  <!-- Legend and provenance -->
+  <line x1="70" y1="1080" x2="1530" y2="1080" stroke="#d8deea" stroke-width="2" />
+  <line x1="80" y1="1115" x2="155" y2="1115" class="posted" />
+  <text x="175" y="1123" class="legend">POSTED</text>
+  <line x1="335" y1="1115" x2="410" y2="1115" class="mentions" />
+  <text x="430" y="1123" class="legend">MENTIONS</text>
+  <text x="680" y="1123" class="footer">12 actual nodes · 14 relationships · source: project Neo4j dump</text>
+</svg>

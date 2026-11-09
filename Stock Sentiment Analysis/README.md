@@ -85,6 +85,33 @@ tweet nodes, with the smaller person and stock groups connected through
 the graph's density and coverage; stock-specific Cypher queries provide a more
 readable subgraph for individual relationships.
 
+### Readable example: NVDA subgraph
+
+The following view uses the original Neo4j dump and keeps up to two NVDA tweets
+per person, ranked by likes plus reposts. It reduces the result to four people,
+seven tweets, one stock, and fourteen relationships so every connection remains
+visible.
+
+![Readable NVDA subgraph connecting four people through seven tweets to the NVDA stock node](docs/neo4j-nvda-example.svg)
+
+Blue `POSTED` edges connect each person to their tweets. Green `MENTIONS` edges
+connect those tweets to NVDA. The tweet labels show shortened text only for
+readability; their dates and engagement counts come directly from the stored
+Neo4j properties.
+
+This Cypher query reproduces the selected subgraph:
+
+```cypher
+MATCH (person:Person)-[:POSTED]->(tweet:Tweet)-[:MENTIONS]->(stock:Stock {symbol: "NVDA"})
+WITH person, tweet, stock,
+     coalesce(tweet.like_count, 0) + coalesce(tweet.retweet_count, 0) AS engagement
+ORDER BY person.username, engagement DESC
+WITH person, stock, collect(tweet)[0..2] AS tweets
+UNWIND tweets AS tweet
+MATCH (person)-[posted:POSTED]->(tweet)-[mentions:MENTIONS]->(stock)
+RETURN person, posted, tweet, mentions, stock;
+```
+
 The graph has three node types and two directed relationships:
 
 ```mermaid
