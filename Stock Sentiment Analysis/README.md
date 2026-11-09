@@ -71,6 +71,20 @@ who posted each message and which stocks that message connects to.
 
 ## Knowledge graph
 
+The following image is the Neo4j Browser visualization generated from the
+project's collected data. It is the full graph rather than a conceptual schema.
+
+![Neo4j Browser visualization of the collected influencer, tweet, and stock graph](docs/neo4j-knowledge-graph.png)
+
+The displayed result contains 875 nodes: 861 tweets, five people, and nine
+stocks. Although the collection configuration names six influencers and ten
+stocks, Neo4j only creates nodes for people and stocks connected to a retained
+stock-matching tweet. The full view is therefore dominated by the 861 purple
+tweet nodes, with the smaller person and stock groups connected through
+`POSTED` and `MENTIONS` relationships. At this scale the visualization shows
+the graph's density and coverage; stock-specific Cypher queries provide a more
+readable subgraph for individual relationships.
+
 The graph has three node types and two directed relationships:
 
 ```mermaid
