@@ -74,6 +74,31 @@ editor can divide a photo into horizontal strips so several helpers process its
 rows at the same time. The sequential model processes the whole photo in one
 pass.
 
+### Why bulk synchronous was faster in this benchmark
+
+The measured result shows that bulk synchronous used 70% of the sequential
+runtime, compared with 80% for fan-in/fan-out. The original benchmark record
+does not include a CPU profile or raw timing breakdown, so it cannot prove that
+one mechanism caused the difference. The code nevertheless points to three
+plausible reasons:
+
+1. Bulk synchronous workers claim the next photo with one atomic counter. The
+   fan-in/fan-out path transfers every photo through an input channel and a
+   result channel, then coordinates worker and writer completion. Those channel
+   handoffs add synchronization work.
+2. Bulk synchronous keeps editing and saving in separate phases. Its workers
+   finish all effects before the program begins PNG encoding. Fan-in/fan-out
+   saves completed PNGs while other workers are still editing, so encoding and
+   image processing can compete for CPU time and memory bandwidth.
+3. A batch of more than 30 images gives the bulk workers enough tasks to share
+   the work evenly, while the cost of the final barrier is paid only once.
+
+That does not make bulk synchronous universally better. Fan-in/fan-out can
+produce the first saved result sooner, does not need to hold the complete batch
+in memory, and is a better fit when images arrive continuously. Bulk synchronous
+fit this finite batch benchmark better; fan-in/fan-out offers better streaming
+behaviour.
+
 ## Image effects
 
 The engine supports four effect codes:
