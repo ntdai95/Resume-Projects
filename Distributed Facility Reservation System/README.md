@@ -12,8 +12,42 @@ and the reservation rules.
 
 ## Demo
 
-The client is a console program. Everything below is a real session against the server
-running locally, with the typed answers shown after each prompt.
+Everything below is the system running locally, first through the generated API
+documentation and then through the console client.
+
+### The API
+
+The service documents itself. Each screenshot is the running server, driven through
+its own Swagger UI at `http://localhost:51225/docs`.
+
+![The API surface](docs/01-api-surface.png)
+
+`GET /v1/facility/` publishes the opening hours and the rate card, so any client can
+discover what the facility charges without hardcoding a price list. The rates it
+returns are the same constants the cost calculation uses.
+
+![The facility rate card](docs/02-facility-rates.png)
+
+`POST /v1/reservations/` books a slot. Two hours of `irrad1` costs 4,400 against the
+published rate of 2,200 an hour, with half of it taken as the down payment, so the
+rate card and the billing agree.
+
+![Booking a reservation](docs/03-reservation.png)
+
+The same endpoint refuses a booking the customer cannot afford. A crusher runs at
+20,000 an hour and this customer holds under 10,000, so the reservation is undone
+before the call returns. The rule lives in the endpoint, which means it holds for the
+peer facilities' clients as well as our own.
+
+![The funds rule refusing a booking](docs/04-funds-rule.png)
+
+Every endpoint needs a real session. A password change is no exception, so a request
+that carries anything other than a live session is turned away before it reaches the
+database.
+
+![A forged session being refused](docs/05-session-required.png)
+
+### The command line client
 
 ### A manager registers and creates a customer
 
@@ -342,77 +376,7 @@ Facility managers can search for users using the first letter, or the first few
 letters, of a client's name. This will return information like the client's ID number,
 username, and first name.
 
-## Correctness and security review
-
-I went back through this project with the server running and fixed the defects below.
-The test suite still passes at 71 of 71 after every change.
-
-**Any caller could take over any account.** Two endpoints accepted the literal string
-`Session Override` in place of a real session, and `update_password` matches on the
-sequential row id. Sending `session=Session Override` with an id was enough to set a
-facility manager's password and then sign in as them, with no credentials at all. I
-reproduced the takeover before the change. The bypass is gone, and the forgotten
-password flow that needed it now runs on the server as `POST /v1/user/reset_password`,
-which takes only an email address. It never lets the caller name a user or choose a
-password, and it answers the same way whether or not the address is registered, so it
-cannot be used to find out who holds an account.
-
-**The funds rule was only enforced in our own client.** This README has always said a
-customer cannot book what they cannot afford. That check lived in the command line
-client, which created the reservation, tried to take the money, and deleted the
-reservation again when the balance was short. Any other caller skipped it entirely,
-which matters because the booking contract is shared with four other teams, and a
-client that stopped between the two calls left an unpaid reservation behind. The check
-now runs inside the reservation endpoint and undoes the booking before returning:
-
-```text
-$ curl -X POST ".../v1/reservations/?customer_id=2&thing_to_reserve=crusher&..."
-{"message":"You do not have enough money to make this transaction"}
-```
-
-The customer had 9,802 and the crusher costs 20,000 an hour. Nothing is left in the
-reservations table afterwards.
-
-**Reading a customer's balance could crash the server.** `get_user_funds` subscripted
-the result of `fetchone()` without checking it, so a lookup for an id with no row
-raised a `TypeError` instead of returning 0 the way its own documentation says.
-
-**The client pointed at a server that no longer exists.** Running `python client.py`
-tried to reach the University of Chicago course machine and failed. It now defaults to
-the local server, with the old address kept as a comment.
-
-**There was no requirements file.** The dependencies had to be guessed from the import
-statements. `requirements.txt` now lists them, and a clean environment built only from
-it runs the full test suite.
-
-**The rate card lived in two places and neither was reachable.** The hourly prices
-were literals inside the cost calculation, with a second copy typed into the command
-line client's prompt text. No other facility's client could find out what anything
-costs, which matters when the booking contract is shared with four other teams. The
-rates and the 25% discount for booking at least 14 days ahead, which was not written
-down anywhere, are constants now and are published by `GET /v1/facility/`. A
-`GET /v1/health` endpoint reports whether the service and its database are answering.
-
-**Two methods were defined twice.** `make_machine_reservation` and
-`make_machine_hold` each had an earlier copy that Python discarded in favour of the
-later one. The dead copies called `self.calculate_downpayment` and
-`self.check_machine_res_valid`, neither of which exists, so they would have raised
-had anything reached them. They are gone, along with 78 lines that could only mislead
-a reader.
-
-**The menus in this README did not match the program.** Both dashboards were listed
-with the wrong numbers, so following the documentation selected the wrong option. They
-now match the dispatch tables in `client.py`.
-
 ## API documentation
 
 Start the server and open `http://localhost:51225/docs` for the generated OpenAPI
 documentation.
-
-## What I would do next
-
-Sessions are held in a dictionary in the server process, so restarting it logs everyone
-out and running more than one worker breaks login. Passwords are sent as query
-parameters, which puts them in server logs, and they belong in a POST body. The
-reservation and the payment are still two calls instead of one transaction, so the
-funds check closes the hole but does not make the pair atomic.

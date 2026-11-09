@@ -26,5 +26,5 @@ try:
                 print(str(elem).ljust(width_list[i]), end=" ")
             else:
                 print(str(elem).ljust(width_list[i]))
-except:
+except Exception:
     print("No transaction has been recorded yet!")

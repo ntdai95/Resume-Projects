@@ -569,7 +569,7 @@ This endpoint runs dense retrieval over the indexed metadata and reports. Asked 
 
 ### `POST /ask`
 
-This endpoint answers a question with retrieval-augmented generation. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. The check is easy to run here. Each claim in the answer, `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500, appears word for word in the top-ranked chunk below it. `llama3` runs locally through Ollama and answers in about a minute on CPU.
+This endpoint answers a question with retrieval-augmented generation. The response carries the generated answer and every chunk it was grounded in, so you can check the answer instead of trusting it. The check is easy to run here. Every claim the answer makes appears word for word in the top-ranked chunk below it, including `oxygen_corrected`, the file `onc_oxygen.nc`, and the Sea-Bird SBE 63 sensor 631500. `llama3` runs locally through Ollama and answers in about a minute on CPU.
 
 ![POST /ask](docs/demo/ask.png)
 

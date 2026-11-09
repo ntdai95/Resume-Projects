@@ -169,7 +169,7 @@ class client:
             to_add = input("How much would you like to add?\n")
             try:
                 to_add = float(to_add)
-            except:
+            except Exception:
                 print('Please use numeric digits.')
             if to_add > 25000 or to_add < 1:
                 print("Please set a value between $1 and $25,000")
@@ -451,12 +451,12 @@ class client:
                         json_object_reservation_other_facility = response.json()
                         if json_object_reservation_other_facility["success"]:
                             break
-                    except:
+                    except Exception:
                         pass
                 if facility_numbers != [] or (facility_numbers == [] and json_object_reservation_other_facility["success"]):
                     try:
                         print("However, your reservation has been scheduled at " + json_object_reservation_other_facility["facility_name"])
-                    except:
+                    except Exception:
                         print("However, your reservation has been scheduled at facility {}".format(facility_number))
                     print("=" * 40)
                     print(json_object_reservation_other_facility["message"])

@@ -89,7 +89,7 @@ class SpecialClient:
                     print("Unfortunately, the {} facility cannot accomodate your reservation at this time.".format(json_object_reservation_other_facility['facility_name']))
 
                 break
-            except:
+            except Exception:
                 pass
             
         print("Goodbye!")
