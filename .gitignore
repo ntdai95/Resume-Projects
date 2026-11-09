@@ -1,5 +1,12 @@
 ﻿# Data
 data/
+!Parallel Image Processing Engine/data/
+!Parallel Image Processing Engine/data/effects.txt
+!Parallel Image Processing Engine/data/in/
+!Parallel Image Processing Engine/data/in/small/
+!Parallel Image Processing Engine/data/in/small/test_img.png
+!Parallel Image Processing Engine/data/out/
+!Parallel Image Processing Engine/data/out/.gitkeep
 *.csv
 *.db
 

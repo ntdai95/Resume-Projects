@@ -2,21 +2,12 @@ package implementations
 
 import (
 	"PhotoEditor/png"
-	"encoding/json"
 	"fmt"
 )
 
-func SequentialImplementation(data_dir []string, decoder *json.Decoder) {
-	var effectData EffectData
+func SequentialImplementation(data_dir []string, effectDataList []EffectData) {
 	for _, directory := range data_dir {
-		for {
-			err := decoder.Decode(&effectData)
-			if err != nil && err.Error() == "EOF" {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-
+		for _, effectData := range effectDataList {
 			pngImg, err := png.Load(fmt.Sprintf("../data/in/%s/%s", directory, effectData.InPath))
 			if err != nil {
 				panic(err)
@@ -35,7 +26,7 @@ func SequentialImplementation(data_dir []string, decoder *json.Decoder) {
 				}
 			}
 
-			err = pngImg.Save(fmt.Sprintf("../data/out/" + directory + "_" + effectData.OutPath))
+			err = pngImg.Save(fmt.Sprintf("../data/out/%s_%s", directory, effectData.OutPath))
 			if err != nil {
 				panic(err)
 			}

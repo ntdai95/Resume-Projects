@@ -2,7 +2,6 @@ package implementations
 
 import (
 	"PhotoEditor/png"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -13,24 +12,16 @@ type BSPContext struct {
 	ImageTaskPointers     []*png.ImageTask
 }
 
-func initBSPContext(data_dir []string, decoder *json.Decoder) BSPContext {
+func initBSPContext(data_dir []string, effectDataList []EffectData) BSPContext {
 	newBSPContext := BSPContext{ImageTasksDoneCounter: int64(0)}
 	for _, directory := range data_dir {
-		for {
-			effectData := EffectData{}
-			err := decoder.Decode(&effectData)
-			if err != nil && err.Error() == "EOF" {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-
+		for _, effectData := range effectDataList {
 			pngImg, err := png.Load(fmt.Sprintf("../data/in/%s/%s", directory, effectData.InPath))
 			if err != nil {
 				panic(err)
 			}
 
-			pngImg.OutPathWithDataDir = fmt.Sprintf("../data/out/" + directory + "_" + effectData.OutPath)
+			pngImg.OutPathWithDataDir = fmt.Sprintf("../data/out/%s_%s", directory, effectData.OutPath)
 			pngImg.Effects = effectData.Effects
 			newBSPContext.ImageTaskPointers = append(newBSPContext.ImageTaskPointers, pngImg)
 		}
@@ -41,7 +32,7 @@ func initBSPContext(data_dir []string, decoder *json.Decoder) BSPContext {
 
 func ExecuteBSP(threads int, wg *sync.WaitGroup, ctx *BSPContext) {
 	for {
-		imageTasksDoneCounter := atomic.SwapInt64(&ctx.ImageTasksDoneCounter, atomic.LoadInt64(&ctx.ImageTasksDoneCounter)+1)
+		imageTasksDoneCounter := atomic.AddInt64(&ctx.ImageTasksDoneCounter, 1) - 1
 		if imageTasksDoneCounter >= int64(len(ctx.ImageTaskPointers)) {
 			wg.Done()
 			return
@@ -63,9 +54,9 @@ func ExecuteBSP(threads int, wg *sync.WaitGroup, ctx *BSPContext) {
 	}
 }
 
-func RunBSP(data_dir []string, threads int, decoder *json.Decoder) {
+func RunBSP(data_dir []string, threads int, effectDataList []EffectData) {
 	var wg sync.WaitGroup
-	ctx := initBSPContext(data_dir, decoder)
+	ctx := initBSPContext(data_dir, effectDataList)
 	for idx := 0; idx < threads; idx++ {
 		wg.Add(1)
 		go ExecuteBSP(threads, &wg, &ctx)
@@ -73,7 +64,7 @@ func RunBSP(data_dir []string, threads int, decoder *json.Decoder) {
 
 	wg.Wait()
 	for _, imageTaskPointer := range ctx.ImageTaskPointers {
-		err := imageTaskPointer.Save(fmt.Sprintf(imageTaskPointer.OutPathWithDataDir))
+		err := imageTaskPointer.Save(imageTaskPointer.OutPathWithDataDir)
 		if err != nil {
 			panic(err)
 		}

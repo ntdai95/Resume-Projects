@@ -16,11 +16,23 @@ const usage = "Usage: editor data_dir [mode] [number_of_threads]\n" +
 	"number_of_threads = Runs the parallel version of the program with the specified number of threads (i.e., goroutines)."
 
 func main() {
-	effectsFile, _ := os.Open("../data/effects.txt")
+	commandLineArgumentsList := os.Args
+	if len(commandLineArgumentsList) != 2 && len(commandLineArgumentsList) != 4 {
+		fmt.Println(usage)
+		return
+	}
+
+	effectsFile, err := os.Open("../data/effects.txt")
+	if err != nil {
+		panic(err)
+	}
 	defer effectsFile.Close()
 	decoder := json.NewDecoder(effectsFile)
+	effectDataList, err := implementations.LoadEffectData(decoder)
+	if err != nil {
+		panic(err)
+	}
 
-	commandLineArgumentsList := os.Args
 	data_dir := strings.Split(commandLineArgumentsList[1], "+")
 	for _, directory := range data_dir {
 		if !slices.Contains([]string{"big", "mixture", "small"}, directory) {
@@ -30,7 +42,7 @@ func main() {
 	}
 
 	if len(commandLineArgumentsList) == 2 {
-		implementations.SequentialImplementation(data_dir, decoder)
+		implementations.SequentialImplementation(data_dir, effectDataList)
 	} else if len(commandLineArgumentsList) == 4 {
 		threads, err := strconv.Atoi(commandLineArgumentsList[3])
 		if err != nil {
@@ -42,11 +54,11 @@ func main() {
 		}
 
 		if commandLineArgumentsList[2] == "pipeline" {
-			implementations.FanInFanOutImplementation(data_dir, threads, decoder)
+			implementations.FanInFanOutImplementation(data_dir, threads, effectDataList)
 		} else if commandLineArgumentsList[2] == "bsp" {
-			implementations.RunBSP(data_dir, threads, decoder)
+			implementations.RunBSP(data_dir, threads, effectDataList)
+		} else {
+			fmt.Println(usage)
 		}
-	} else {
-		fmt.Println(usage)
 	}
 }

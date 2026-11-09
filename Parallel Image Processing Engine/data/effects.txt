@@ -1,0 +1,4 @@
+{"inPath":"test_img.png","outPath":"test_img_grayscale.png","effects":["G"]}
+{"inPath":"test_img.png","outPath":"test_img_edge.png","effects":["E"]}
+{"inPath":"test_img.png","outPath":"test_img_sharpen.png","effects":["S"]}
+{"inPath":"test_img.png","outPath":"test_img_blur.png","effects":["B"]}

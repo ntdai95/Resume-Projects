@@ -42,22 +42,23 @@ func (img *ImageTask) Grayscale(threads int) {
 }
 
 func (img *ImageTask) WorkerApplyConvolution(kernel [9]float64, min_y, max_y, min_x, max_x int) {
-	var a uint16
+	bounds := img.Bounds
 	for y := min_y; y < max_y; y++ {
 		for x := min_x; x < max_x; x++ {
 			r, g, b := 0.0, 0.0, 0.0
+			_, _, _, centerA := img.In.At(x, y).RGBA()
+			a := uint16(centerA)
 
 			for row := -1; row <= 1; row++ {
 				for column := -1; column <= 1; column++ {
 					px := x + column
 					py := y + row
 
-					d_r, d_g, d_b, d_a := img.In.At(px, py).RGBA()
-					if min_x <= px && px < max_x && min_y <= py && py < max_y {
+					if bounds.Min.X <= px && px < bounds.Max.X && bounds.Min.Y <= py && py < bounds.Max.Y {
+						d_r, d_g, d_b, _ := img.In.At(px, py).RGBA()
 						r += float64(d_r) * kernel[(row+1)*3+(column+1)]
 						g += float64(d_g) * kernel[(row+1)*3+(column+1)]
 						b += float64(d_b) * kernel[(row+1)*3+(column+1)]
-						a = uint16(d_a)
 					}
 				}
 			}

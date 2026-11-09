@@ -2,7 +2,6 @@ package implementations
 
 import (
 	"PhotoEditor/png"
-	"encoding/json"
 	"fmt"
 )
 
@@ -12,24 +11,16 @@ func ImageTaskGenerator(directory string, effectData EffectData) png.ImageTask {
 		panic(err)
 	}
 
-	pngImg.OutPathWithDataDir = fmt.Sprintf("../data/out/" + directory + "_" + effectData.OutPath)
+	pngImg.OutPathWithDataDir = fmt.Sprintf("../data/out/%s_%s", directory, effectData.OutPath)
 	pngImg.Effects = effectData.Effects
 	return *pngImg
 }
 
-func FanIn(data_dir []string, decoder *json.Decoder) <-chan png.ImageTask {
+func FanIn(data_dir []string, effectDataList []EffectData) <-chan png.ImageTask {
 	imageTaskChannel := make(chan png.ImageTask)
 	go func() {
 		for _, directory := range data_dir {
-			for {
-				effectData := EffectData{}
-				err := decoder.Decode(&effectData)
-				if err != nil && err.Error() == "EOF" {
-					break
-				} else if err != nil {
-					panic(err)
-				}
-
+			for _, effectData := range effectDataList {
 				imageTaskChannel <- ImageTaskGenerator(directory, effectData)
 			}
 		}
@@ -86,14 +77,14 @@ func FanOut(imageTaskChannel <-chan png.ImageTask, threads int) <-chan png.Image
 }
 
 func ResultsAggregator(imageResultPointer *png.ImageTask) {
-	err := imageResultPointer.Save(fmt.Sprintf(imageResultPointer.OutPathWithDataDir))
+	err := imageResultPointer.Save(imageResultPointer.OutPathWithDataDir)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func FanInFanOutImplementation(data_dir []string, threads int, decoder *json.Decoder) {
-	imageTaskChannel := FanIn(data_dir, decoder)
+func FanInFanOutImplementation(data_dir []string, threads int, effectDataList []EffectData) {
+	imageTaskChannel := FanIn(data_dir, effectDataList)
 	imageResultChannel := FanOut(imageTaskChannel, threads)
 	done := make(chan bool)
 	go func() {
