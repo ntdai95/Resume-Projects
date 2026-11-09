@@ -1,215 +1,169 @@
 # Stock Sentiment Analysis
 
-This project asks whether what financial influencers post on X lines up with how
-technology stocks move. It pairs tweet sentiment with daily price data, then tests the
-relationship with correlation, Granger causality and GARCH models. The short answer is
-that sentiment tracks same-day moves and says much more about volatility than it does
-about tomorrow's return.
+This project tests whether posts from six financial influencers line up with
+daily returns for ten large technology stocks. It combines X API data, market
+prices, FinTwitBERT sentiment scores, SQLite, Neo4j, Granger causality tests,
+and GARCH(1,1) volatility models in one reproducible pipeline.
 
-The stack is a hybrid database (SQLite and Neo4j), financial NLP with FinTwitBERT and econometric time-series analysis in `statsmodels` and `arch`.
+The work was completed by a team of four for Algorithms and Data Models at the
+University of Victoria. The dataset contains 15,194 collected tweets, of which
+861 mention at least one tracked stock.
 
----
+## What the data showed
 
-## System overview
+The measured effect was modest. AAPL had the largest same-day
+sentiment-return correlation at 0.1018. NVDA was the only stock whose minimum
+Granger p-value across lags 1-5 fell below 0.05, at 0.0036. The GARCH models
+independently showed persistent return volatility for NVDA and TSLA, with beta
+values of 0.9081 and 0.9627.
 
-The pipeline runs in four stages:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results-summary-dark.png">
+  <img alt="Same-day correlations, Granger p-values, and GARCH volatility persistence for ten technology stocks" src="docs/results-summary-light.png">
+</picture>
 
-1. Data collection
-2. Hybrid data storage
-3. Sentiment modeling
-4. Statistical and volatility analysis
+The three panels answer different questions:
 
-`main.py` runs all four in order, so the whole analysis reproduces from one command.
+- The first panel measures association between sentiment and same-day returns.
+- The second tests whether lagged sentiment improves return forecasts beyond
+  lagged returns. The dashed line marks the 0.05 significance threshold.
+- The third measures persistence in the return series through GARCH(1,1). The
+  GARCH model does not include sentiment in its variance equation.
 
----
+The conclusion is intentionally narrow: influencer sentiment was not a strong
+standalone predictor in this sample, and the one significant NVDA result should
+be interpreted alongside the limited stock-specific tweet counts.
 
-## Data collection
+## Pipeline
 
-There are two data sources.
+`main.py` runs the analysis in four stages:
 
-### Influencer tweets
+1. It scores cleaned English-language tweets with FinTwitBERT.
+2. It aggregates sentiment by stock and day with engagement weights.
+3. It joins the daily signal to market returns from the two SQLite price stores.
+4. It runs stationarity, correlation, Granger, and GARCH analyses for each stock.
 
-Tweets come from the X (Twitter) API, from six accounts that move financial
-conversation:
+The final table is written to `result/final_analysis.csv`. The plotting code
+writes one sentiment-return chart per ticker and a three-panel results summary.
 
-* Elon Musk
-* Cathie Wood
-* Ray Dalio
-* Jim Cramer
-* Michael Burry
-* Donald Trump
+## Data collection and storage
 
-Only the tweets that mention one of the tracked technology stocks are kept.
+Tweets were collected from Elon Musk, Donald Trump, Cathie Wood, Jim Cramer,
+Michael Burry, and Ray Dalio. A tweet is retained only when its text matches at
+least one tracked company or ticker.
 
-### Stock market data
+Daily OHLCV data comes from `yfinance` for these stocks:
 
-Daily prices come from `yfinance` for ten technology companies:
+- NVIDIA is tracked as `NVDA`.
+- Apple is tracked as `AAPL`.
+- Microsoft is tracked as `MSFT`.
+- Alphabet is tracked as `GOOG`.
+- Amazon is tracked as `AMZN`.
+- Broadcom is tracked as `AVGO`.
+- Meta Platforms is tracked as `META`.
+- Taiwan Semiconductor is tracked as `TSM`.
+- Tesla is tracked as `TSLA`.
+- Tencent is tracked as `TCEHY`.
 
-* NVIDIA
-* Apple
-* Microsoft
-* Alphabet
-* Amazon
-* Broadcom
-* Meta Platforms
-* TSMC
-* Tesla
-* Tencent
+SQLite stores the records used for date joins and statistical analysis. Neo4j
+stores the relationship graph:
 
-Each row carries OHLC, adjusted close and volume.
-
----
-
-## Hybrid database architecture
-
-The two stores answer different questions, so the project uses both.
-
-### SQLite (relational storage)
-
-SQLite holds the tables that get joined on a date:
-
-* Tweet content and metadata
-* Tweet-to-stock relationships
-* Historical stock prices
-* Daily sentiment signals
-
-Time-series joins and daily aggregation are what relational storage is good at, so
-everything the analysis reads lives here.
-
-### Neo4j (graph database)
-
-Neo4j holds the influencer relationships as a graph:
-
-```
-(Person) --POSTED--> (Tweet) --MENTIONS--> (Stock)
+```text
+(Person) -[:POSTED]-> (Tweet) -[:MENTIONS]-> (Stock)
 ```
 
-Walking that graph is how I look at which influencers talk about which stocks, and how
-a single tweet propagates.
+The repository includes a Neo4j dump but does not commit API credentials or
+local SQLite databases. Credentials belong in a local `.env` file.
 
----
+## Sentiment signal
 
-## Sentiment modeling
+`sentiment_utils.py` removes URLs and mentions, drops non-English tweets, and
+scores the remaining text with `StephanAkkerman/FinTwitBERT-sentiment`.
 
-Sentiment comes from **FinTwitBERT**, a sentiment model trained on financial
-Twitter-style text instead of general prose.
+Each tweet receives this scalar score:
 
-### Preprocessing
-
-Each tweet is cleaned before it reaches the model:
-
-* URLs and mentions are removed
-* Text is normalized
-* Non-English tweets are dropped
-
-### Sentiment score
-
-Every tweet gets one score from the model's two class probabilities:
-
-```
+```text
 sentiment = P(positive) - P(negative)
 ```
 
-### Daily sentiment aggregation
+The daily stock-level signal is an engagement-weighted average. The weight for
+one tweet is:
 
-Daily sentiment per stock is an engagement-weighted average, so a tweet that more
-people actually saw counts for more:
-
-```
-weight = 1 + retweets + 0.5 * likes
+```text
+weight = 1 + retweets + 0.5 × likes
 ```
 
----
+This gives widely seen posts more influence without treating engagement as a
+separate prediction target.
 
-## Statistical analysis pipeline
+## Statistical analysis
 
-Four analyses run over the daily series.
+The pipeline performs four checks for each stock:
 
-### 1. Stationarity tests
+1. Augmented Dickey-Fuller tests assess stationarity for returns and sentiment.
+2. Pearson correlation measures the same-day linear association.
+3. Granger tests examine lags 1-5 and record the smallest p-value.
+4. GARCH(1,1) estimates how quickly return-volatility shocks decay.
 
-Augmented Dickey-Fuller tests check that the series are suitable for the models that
-follow.
+The stored NVDA chart shows the two daily series used by the correlation and
+Granger steps.
 
-### 2. Correlation analysis
+![NVDA daily return and sentiment](plots/NVDA_plot.png)
 
-This measures the same-day correlation between sentiment and price change, one stock at a time.
+The individual series are noisy, which is why the project reports formal tests
+instead of drawing a conclusion from visual overlap alone.
 
-### 3. Granger causality tests
+## Run the project
 
-These test whether sentiment carries information about future price changes. Predictive
-power is weak overall, and only a few cases reach statistical significance.
+Install the dependencies:
 
-### 4. Volatility modeling (GARCH)
-
-GARCH(1,1) models measure volatility persistence and how the market reacts to shocks.
-Sentiment shows up more strongly in volatility than in return prediction.
-
----
-
-## Outputs
-
-Each run writes:
-
-* Daily sentiment signals
-* Sentiment against return plots
-* Correlation statistics
-* Granger causality results
-* GARCH volatility parameters
-* Final analysis tables
-
-Everything is saved to disk, so a result can be traced back to the run that produced it.
-
----
-
-## Tech stack
-
-Python, SQLite, Neo4j, Hugging Face Transformers, PyTorch, statsmodels, arch, pandas,
-matplotlib, yfinance, X API.
-
----
-
-## Why I built it
-
-Markets react to what gets said online, and I wanted to find out how much of that is
-measurable and how much is only assumed. The point was never a trading system. It was to test
-the statistical relationship between influencer sentiment and market behavior, and to
-report the result even where it came back weak.
-
----
-
-## Repository structure
-
-```
-.
-├── collect_x_stock_tweets.py
-├── downloading_data_training.py
-├── downloading_data_testing.py
-├── sentiment_utils.py
-├── stock_utils.py
-├── analysis_utils.py
-├── plotting_utils.py
-├── main.py
-├── config.py
-├── requirements.txt
-└── README.md
+```bash
+pip install -r requirements.txt
 ```
 
-`main.py` runs every stage in order.
+Copy the environment template and add local credentials:
 
----
+```bash
+cp .env.example .env
+```
 
-## What I found
+Create the two market-price databases:
 
-* Social sentiment correlates measurably with same-day stock movement.
-* It predicts next-day returns poorly.
-* It matters more for volatility dynamics than for the direction of a return.
-* The effect is uneven across stocks, so no single influencer explains the market.
+```bash
+python downloading_data_training.py
+python downloading_data_testing.py
+```
 
----
+Collect tweets into SQLite and Neo4j:
 
-## Report and slides
+```bash
+python collect_x_stock_tweets.py
+```
 
-The full methodology and results are written up here:
+Run the complete analysis:
 
-- [Project Report](report/Stock_Sentiment_Report.pdf)
-- [Presentation Slides](report/Stock_Sentiment_Presentation.pdf)
+```bash
+python main.py
+```
+
+The collection step requires an X API bearer token and a running Neo4j
+database. The statistical pipeline also requires the generated SQLite files.
+
+## Repository layout
+
+| Path | Purpose |
+|---|---|
+| `collect_x_stock_tweets.py` | This script collects tweets and writes the SQLite and Neo4j stores. |
+| `downloading_data_training.py` | This script downloads the 2024 market-price partition. |
+| `downloading_data_testing.py` | This script downloads the 2025 market-price partition. |
+| `sentiment_utils.py` | This module cleans and scores tweets, then builds daily sentiment. |
+| `stock_utils.py` | This module joins daily sentiment to stock returns. |
+| `analysis_utils.py` | This module runs the stationarity, correlation, Granger, and GARCH tests. |
+| `plotting_utils.py` | This module writes the per-stock and summary figures. |
+| `report/` | This directory contains the full report and presentation. |
+
+## Report and presentation
+
+The full methodology, result tables, limitations, and team attribution are in
+the [project report](report/Stock_Sentiment_Report.pdf). The condensed version
+is available in the [presentation slides](report/Stock_Sentiment_Presentation.pdf).

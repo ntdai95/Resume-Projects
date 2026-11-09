@@ -26,7 +26,8 @@ MAX_PAGES_PER_USER = 10
 SQLITE_DB_PATH = "stock_influencer_tweets.db"
 NEO4J_URI      = "bolt://localhost:7687"
 NEO4J_USER     = "neo4j"
-NEO4J_PASSWORD = "neo4jproject"
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 STOCKS = [
     ("NVDA",  "NVIDIA"),
     ("AAPL",  "Apple"),
@@ -190,6 +191,9 @@ def insert_tweet(conn, tweet, user_id, stocks):
 
 class Neo4jClient:
     def __init__(self):
+        if not NEO4J_PASSWORD:
+            raise RuntimeError("Missing NEO4J_PASSWORD. Set it in the .env file.")
+
         self.driver = GraphDatabase.driver(
             NEO4J_URI,
             auth=(NEO4J_USER, NEO4J_PASSWORD)
@@ -199,14 +203,14 @@ class Neo4jClient:
         self.driver.close()
 
     def init_constraints(self):
-        with self.driver.session(database="stock-influencer-tweets-neo4j") as s:
+        with self.driver.session(database=NEO4J_DATABASE) as s:
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE")
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (t:Tweet) REQUIRE t.id IS UNIQUE")
             s.run("CREATE CONSTRAINT IF NOT EXISTS FOR (s:Stock) REQUIRE s.symbol IS UNIQUE")
 
     def insert_stock_relations(self, tweet, user_id, user_username, user_name, stocks):
         metrics = tweet.get("public_metrics", {})
-        with self.driver.session(database="stock-influencer-tweets-neo4j") as s:
+        with self.driver.session(database=NEO4J_DATABASE) as s:
             s.run("""
             MERGE (u:Person {id: $uid})
               ON CREATE SET u.username = $uname,

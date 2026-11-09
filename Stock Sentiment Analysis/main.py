@@ -26,6 +26,7 @@ def main():
 
         output_path = os.path.join(RESULT_DIR, "final_analysis.csv")
         pd.DataFrame(final_results).to_csv(output_path, index=False)
+        plotting_utils.plot_summary(final_results)
 
 
 if __name__ == "__main__":
