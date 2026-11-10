@@ -1,6 +1,6 @@
 # Distributed Facility Reservation System
 
-A booking system for a shared equipment facility, built as a FastAPI service over
+This booking system for a shared equipment facility was completed by a team of four and built as a FastAPI service over
 SQLite with a persistent command line client. It was written to interoperate with four
 other teams' independent implementations of one shared HTTP contract that nobody could
 change on their own, so a booking that cannot be filled locally is offered to the other
