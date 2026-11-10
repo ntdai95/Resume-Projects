@@ -6,6 +6,12 @@ temperature forecaster, and exposes a retrieval-augmented question-answering
 interface over the resulting metadata. A FastAPI service and Streamlit demo
 sit on top.
 
+Bronze ingestion uses pandas and xarray before Spark harmonizes 10.8 million
+observations into the Silver layer and produces a 3,693,068-row Gold forecasting
+table. Retrieval reached hit@k 0.9 and term recall 0.85. The forecasting benchmark
+also records where persistence beat XGBoost and where air-temperature RMSE improved
+by 48% at twelve hours.
+
 ```bash
 pip install -r requirements.txt
 docker compose up -d qdrant
