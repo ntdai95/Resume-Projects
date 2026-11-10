@@ -92,6 +92,15 @@ per person, ranked by likes plus reposts. It reduces the result to four people,
 seven tweets, one stock, and fourteen relationships so every connection remains
 visible.
 
+The Neo4j Browser result below returns the relationship variables as well as the
+nodes, so Neo4j draws every edge. The result overview confirms seven `POSTED`
+relationships and seven `MENTIONS` relationships.
+
+![Neo4j Browser NVDA subgraph with seven POSTED edges and seven MENTIONS edges](docs/neo4j-nvda-edges.png)
+
+The same result is laid out below with larger labels so the stored people,
+tweet excerpts, dates, and engagement counts remain readable at README width.
+
 ![Readable NVDA subgraph connecting four people through seven tweets to the NVDA stock node](docs/neo4j-nvda-example.svg)
 
 Blue `POSTED` edges connect each person to their tweets. Green `MENTIONS` edges
