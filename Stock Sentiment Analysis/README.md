@@ -5,7 +5,7 @@ daily returns for ten large technology stocks. It combines X API data, market
 prices, FinTwitBERT sentiment scores, SQLite, Neo4j, Granger causality tests,
 and GARCH(1,1) volatility models in one reproducible pipeline.
 
-The work was completed by a team of four for Algorithms and Data Models at the
+The work was completed by a team of four for Algorithms and Data Models (CSC 501) at the
 University of Victoria. The dataset contains 15,194 collected tweets, of which
 861 mention at least one tracked stock.
 
